@@ -9,6 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  APT_PACKAGES: pkg-config,libgtk-4-dev,libwayland-dev,libxkbcommon-dev,libegl1-mesa-dev,libgles2-mesa-dev,libdrm-dev,libgbm-dev,libinput-dev,libudev-dev,libxkbcommon-x11-dev,meson,ninja-build,libgirepository1.0-dev
 
 jobs:
   formatting:
@@ -53,18 +54,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: pkg-config,
-            libgtk-4-dev,
-            libgtk4-layer-shell-dev,
-            libwayland-dev,
-            libxkbcommon-dev,
-            libegl1-mesa-dev,
-            libgles2-mesa-dev,
-            libdrm-dev,
-            libgbm-dev,
-            libinput-dev,
-            libudev-dev,
-            libxkbcommon-x11-dev
+          packages: ${{ env.APT_PACKAGES }}
           version: 1.0
       - name: Install musl-tools
         uses: awalsh128/cache-apt-pkgs-action@v1
@@ -72,6 +62,13 @@ jobs:
           packages: musl-tools
           version: 1.0
         if: matrix.target == 'x86_64-unknown-linux-musl'
+      - name: Install gtk4-layer-shell from source
+        run: |
+          git clone https://github.com/wmww/gtk4-layer-shell
+          cd gtk4-layer-shell
+          meson setup build --prefix=/usr -Dexamples=false -Dtests=false -Dvapi=false
+          ninja -C build
+          sudo ninja -C build install
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
       - name: Run sccache-cache
@@ -97,19 +94,15 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: pkg-config,
-            libgtk-4-dev,
-            libgtk4-layer-shell-dev,
-            libwayland-dev,
-            libxkbcommon-dev,
-            libegl1-mesa-dev,
-            libgles2-mesa-dev,
-            libdrm-dev,
-            libgbm-dev,
-            libinput-dev,
-            libudev-dev,
-            libxkbcommon-x11-dev
+          packages: ${{ env.APT_PACKAGES }}
           version: 1.0
+      - name: Install gtk4-layer-shell from source
+        run: |
+          git clone https://github.com/wmww/gtk4-layer-shell
+          cd gtk4-layer-shell
+          meson setup build --prefix=/usr -Dexamples=false -Dtests=false -Dvapi=false
+          ninja -C build
+          sudo ninja -C build install
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
       - name: Run sccache-cache
@@ -136,18 +129,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: pkg-config,
-            libgtk-4-dev,
-            libgtk4-layer-shell-dev,
-            libwayland-dev,
-            libxkbcommon-dev,
-            libegl1-mesa-dev,
-            libgles2-mesa-dev,
-            libdrm-dev,
-            libgbm-dev,
-            libinput-dev,
-            libudev-dev,
-            libxkbcommon-x11-dev
+          packages: ${{ env.APT_PACKAGES }}
           version: 1.0
       - name: Install musl-tools
         uses: awalsh128/cache-apt-pkgs-action@v1
@@ -155,6 +137,13 @@ jobs:
           packages: musl-tools
           version: 1.0
         if: matrix.target == 'x86_64-unknown-linux-musl'
+      - name: Install gtk4-layer-shell from source
+        run: |
+          git clone https://github.com/wmww/gtk4-layer-shell
+          cd gtk4-layer-shell
+          meson setup build --prefix=/usr -Dexamples=false -Dtests=false -Dvapi=false
+          ninja -C build
+          sudo ninja -C build install
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
       - name: Run sccache-cache
@@ -176,19 +165,15 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: pkg-config,
-            libgtk-4-dev,
-            libgtk4-layer-shell-dev,
-            libwayland-dev,
-            libxkbcommon-dev,
-            libegl1-mesa-dev,
-            libgles2-mesa-dev,
-            libdrm-dev,
-            libgbm-dev,
-            libinput-dev,
-            libudev-dev,
-            libxkbcommon-x11-dev
+          packages: ${{ env.APT_PACKAGES }}
           version: 1.0
+      - name: Install gtk4-layer-shell from source
+        run: |
+          git clone https://github.com/wmww/gtk4-layer-shell
+          cd gtk4-layer-shell
+          meson setup build --prefix=/usr -Dexamples=false -Dtests=false -Dvapi=false
+          ninja -C build
+          sudo ninja -C build install
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
       - name: Run sccache-cache
