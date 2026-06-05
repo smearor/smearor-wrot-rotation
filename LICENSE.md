@@ -1,6 +1,6 @@
-MIT License
+# MIT License
 
-Copyright (c) 2026 Smearor
+Copyright (c) 2026 Andreas Schaeffer, the Reactive Graph Contributors and the Smearor Contributors.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,0 +1,41 @@
+p:documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - CHANGELOG.md
+          - CODE_OF_CONDUCT.md
+          - CONTRIBUTING.md
+          - README.md
+          - SECURITY.md
+          - book/**
+          - docs/**
+          - .github/workflows/docs.yml
+          - .github/workflows/command-reference.yml
+          - .github/workflows/schema.yml
+p:continuous-integration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/workflows/**
+          - .github/dependabot.yml
+          - .github/labeler.yml
+          - .github/labels.yml
+p:distribution:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Dockerfile
+          - .github/workflows/release.yml
+          - .github/workflows/docker.yml
+p:build-system:
+  - changed-files:
+      - any-glob-to-any-file:
+          - clippy.toml
+          - .rustfmt.toml
+          - codecov.yaml
+          - .github/workflows/msrv.yml
+p:dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - Cargo.toml
+          - Cargo.lock
+          - crates/**/Cargo.toml
+          - .github/workflows/dependabot-approve-and-auto-merge.yml
+

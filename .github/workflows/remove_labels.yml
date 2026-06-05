@@ -1,0 +1,16 @@
+name: Remove Labels
+
+on:
+  issues:
+    types: [ closed ]
+  pull_request:
+    types: [ closed ]
+
+jobs:
+  remove_labels:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Remove labels
+        uses: andymckay/labeler@master
+        with:
+          remove-labels: "o:triage, o:good-first-issue, o:help-wanted, o:question, o:stale"

@@ -1,0 +1,6 @@
+[book]
+authors = ["Andreas Schaeffer <hanack@nooblounge.net>"]
+language = "en"
+multilingual = false
+src = "src"
+title = "smearor-wrot-rotation Documentation"
