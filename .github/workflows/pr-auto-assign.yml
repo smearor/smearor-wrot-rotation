@@ -13,6 +13,6 @@ permissions:
 
 jobs:
   auto-assign:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: kentaro-m/auto-assign-action@v2.0.0
