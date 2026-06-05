@@ -1,6 +1,6 @@
 # The RotationWidget
 
-The primary component of this library is the `RotationWidget` (internally subclassed in GObject as `RotatedBox`).
+The primary component of this library is the `RotationWidget` (internally subclassed in GObject as `RotationWidget`).
 
 ## Construction
 
@@ -20,7 +20,7 @@ You can set any GTK4 widget as its child:
 use gtk4::Button;
 
 let button = Button::with_label("Interactive Button");
-rotation_widget.set_child(Some(&button));
+rotation_widget.set_child(Some( & button));
 ```
 
 ## Rotation Orientation Options

@@ -4,15 +4,13 @@ use crate::animation::zoom::RotationZoomAnimation;
 use crate::widget::imp::region::RotatedRegionCalculator;
 use crate::widget::layout::RotatedLayout;
 use crate::widget::widget::RotationWidget;
-use glib::ControlFlow;
 use glib::object::Cast;
 use glib::subclass::prelude::ObjectImpl;
 use glib::subclass::prelude::ObjectImplExt;
 use glib::subclass::prelude::ObjectSubclass;
 use glib::subclass::prelude::ObjectSubclassExt;
 use glib::subclass::prelude::ObjectSubclassIsExt;
-use gtk4::Orientation;
-use gtk4::PropagationPhase;
+use glib::ControlFlow;
 use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::GestureExt;
 use gtk4::prelude::NativeExt;
@@ -22,6 +20,8 @@ use gtk4::prelude::WidgetExtManual;
 use gtk4::subclass::prelude::WidgetClassExt;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::prelude::WidgetImplExt;
+use gtk4::Orientation;
+use gtk4::PropagationPhase;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -41,7 +41,7 @@ pub struct RotationWidgetImpl {
 
 #[glib::object_subclass]
 impl ObjectSubclass for RotationWidgetImpl {
-    const NAME: &'static str = "RotatedBox";
+    const NAME: &'static str = "RotationWidget";
     type Type = RotationWidget;
     type ParentType = gtk4::Widget;
 
