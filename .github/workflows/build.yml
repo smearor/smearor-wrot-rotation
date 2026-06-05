@@ -38,6 +38,8 @@ jobs:
     needs: [ formatting, check_changelog ]
     if: always() && (!contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
     strategy:
       matrix:
         toolchain: [ stable, nightly-2026-06-01 ]
@@ -84,6 +86,8 @@ jobs:
         os: [ ubuntu-24.04, ubuntu-24.04-arm ]
         toolchain: [ stable, nightly-2026-06-01 ]
     runs-on: ${{ matrix.os }}
+    container:
+      image: ubuntu:26.04
     steps:
       - name: VCS Checkout
         uses: actions/checkout@v5
@@ -118,6 +122,8 @@ jobs:
         toolchain: [ stable, nightly-2026-06-01 ]
         target: [ x86_64-unknown-linux-gnu, x86_64-unknown-linux-musl ]
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
     steps:
       - name: VCS Checkout
         uses: actions/checkout@v5
@@ -155,6 +161,8 @@ jobs:
     needs: [ lint ]
     if: always() && (!contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
     steps:
       - name: VCS Checkout
         uses: actions/checkout@v5
@@ -162,20 +170,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: ${{ env.APT_PACKAGES }}
-          version: 1.0
-      - name: Install gtk4-layer-shell from source
-        run: |
-          git clone https://github.com/wmww/gtk4-layer-shell
-          cd gtk4-layer-shell
-          meson setup build --prefix=/usr -Dexamples=false -Dtests=false -Dvapi=false
-          ninja -C build
-          sudo ninja -C build install
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Build API Docs
