@@ -50,7 +50,23 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: ${{ env.APT_PACKAGES }}
+          packages: |
+            curl
+            pkg-config
+            libgtk-4-dev
+            libgtk4-layer-shell-dev
+            libwayland-dev
+            libxkbcommon-dev
+            libegl1-mesa-dev
+            libgles2-mesa-dev
+            libdrm-dev
+            libgbm-dev
+            libinput-dev
+            libudev-dev
+            libxkbcommon-x11-dev
+            meson
+            ninja-build
+            libgirepository1.0-dev
           version: 1.0
       - name: Install musl-tools
         uses: awalsh128/cache-apt-pkgs-action@v1
