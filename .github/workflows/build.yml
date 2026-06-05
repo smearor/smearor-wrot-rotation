@@ -133,7 +133,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl
+          apt-get install -y curl build-essential
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
