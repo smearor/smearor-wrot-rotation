@@ -65,7 +65,7 @@ jobs:
           tar -czf smearor-wrot-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz -C release .
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: smearor-wrot-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz
           draft: false
