@@ -3,12 +3,9 @@
 //! This example showcases the `RotationWidget` layout, coordinates translation,
 //! and snappy animations inside a modern GTK4 application.
 
-use smearor_wrot_rotation::RotationControlHandler;
-use smearor_wrot_rotation::RotationWidget;
-use smearor_wrot_rotation::SmearorRotation;
+use gtk4::Align;
 use gtk4::Application;
 use gtk4::ApplicationWindow;
-use gtk4::Align;
 use gtk4::Button;
 use gtk4::Entry;
 use gtk4::Frame;
@@ -17,11 +14,12 @@ use gtk4::Orientation;
 use gtk4::Scale;
 use gtk4::Switch;
 use gtk4::prelude::*;
+use smearor_wrot_rotation::RotationControlHandler;
+use smearor_wrot_rotation::RotationWidget;
+use smearor_wrot_rotation::SmearorRotation;
 
 fn main() -> glib::ExitCode {
-    let application = Application::builder()
-        .application_id("io.smearor.wrot.rotation.demo")
-        .build();
+    let application = Application::builder().application_id("io.smearor.wrot.rotation.demo").build();
 
     application.connect_activate(build_ui);
     application.run()
@@ -54,19 +52,12 @@ fn build_ui(application: &Application) {
     main_box.append(&title_label);
 
     // Grid for controlling properties
-    let grid = gtk4::Grid::builder()
-        .row_spacing(8)
-        .column_spacing(12)
-        .margin_bottom(12)
-        .build();
+    let grid = gtk4::Grid::builder().row_spacing(8).column_spacing(12).margin_bottom(12).build();
 
     // Control: Animation Switch
     let switch_label = Label::new(Some("Enable Animations:"));
     switch_label.set_halign(Align::Start);
-    let animation_switch = Switch::builder()
-        .active(true)
-        .halign(Align::Start)
-        .build();
+    let animation_switch = Switch::builder().active(true).halign(Align::Start).build();
     grid.attach(&switch_label, 0, 0, 1, 1);
     grid.attach(&animation_switch, 1, 0, 1, 1);
 
@@ -113,7 +104,7 @@ fn build_ui(application: &Application) {
     rotation_widget.set_animations_enabled(true);
     rotation_widget.set_animation_speed(500);
     rotation_widget.set_animation_overshoot(1.7);
-    
+
     // Ensure it expands to fill remaining space nicely
     rotation_widget.set_hexpand(true);
     rotation_widget.set_vexpand(true);
@@ -121,11 +112,7 @@ fn build_ui(application: &Application) {
     rotation_widget.set_valign(Align::Center);
 
     // Child widget inside the RotationWidget (an interactive card)
-    let child_frame = Frame::builder()
-        .label("Rotated Content")
-        .width_request(240)
-        .height_request(240)
-        .build();
+    let child_frame = Frame::builder().label("Rotated Content").width_request(240).height_request(240).build();
 
     let child_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
@@ -139,22 +126,21 @@ fn build_ui(application: &Application) {
         .build();
 
     let child_label = Label::new(Some("I am rotated!"));
-    
+
     // Add interactive elements inside the rotated child to test coordinates mapping
     let click_me_button = Button::with_label("Click Me!");
     let status_label = Label::new(Some("Status: Ready"));
-    
+
     // Connection for interactive testing
     click_me_button.connect_clicked(glib::clone!(
-        #[weak] status_label,
+        #[weak]
+        status_label,
         move |_| {
             status_label.set_label("Status: Button Clicked! Input transform works!");
         }
     ));
 
-    let text_entry = Entry::builder()
-        .placeholder_text("Type rotated text...")
-        .build();
+    let text_entry = Entry::builder().placeholder_text("Type rotated text...").build();
 
     child_box.append(&child_label);
     child_box.append(&click_me_button);
@@ -173,15 +159,12 @@ fn build_ui(application: &Application) {
         .margin_top(12)
         .margin_bottom(12)
         .build();
-    
+
     viewport_frame.set_child(Some(&rotation_widget));
     main_box.append(&viewport_frame);
 
     // Status / Degree display at the bottom
-    let current_angle_label = Label::builder()
-        .label("Current Angle: 0.00°")
-        .margin_bottom(6)
-        .build();
+    let current_angle_label = Label::builder().label("Current Angle: 0.00°").margin_bottom(6).build();
     main_box.append(&current_angle_label);
 
     // Custom slider for manual arbitrary rotation
@@ -193,14 +176,16 @@ fn build_ui(application: &Application) {
 
     // Connect control switches/sliders to RotationWidget
     animation_switch.connect_active_notify(glib::clone!(
-        #[weak] rotation_widget,
+        #[weak]
+        rotation_widget,
         move |switch| {
             rotation_widget.set_animations_enabled(switch.is_active());
         }
     ));
 
     speed_scale.connect_value_changed(glib::clone!(
-        #[weak] rotation_widget,
+        #[weak]
+        rotation_widget,
         move |scale| {
             let speed_ms = scale.value() as u64;
             rotation_widget.set_animation_speed(speed_ms);
@@ -208,7 +193,8 @@ fn build_ui(application: &Application) {
     ));
 
     overshoot_scale.connect_value_changed(glib::clone!(
-        #[weak] rotation_widget,
+        #[weak]
+        rotation_widget,
         move |scale| {
             let overshoot = scale.value();
             rotation_widget.set_animation_overshoot(overshoot);
@@ -217,9 +203,12 @@ fn build_ui(application: &Application) {
 
     // Quick snap transitions with three-phase animations
     button_0.connect_clicked(glib::clone!(
-        #[weak] rotation_widget,
-        #[weak] manual_scale,
-        #[weak] current_angle_label,
+        #[weak]
+        rotation_widget,
+        #[weak]
+        manual_scale,
+        #[weak]
+        current_angle_label,
         move |_| {
             rotation_widget.set_rotation_with_animation(0.0);
             manual_scale.set_value(0.0);
@@ -228,9 +217,12 @@ fn build_ui(application: &Application) {
     ));
 
     button_90.connect_clicked(glib::clone!(
-        #[weak] rotation_widget,
-        #[weak] manual_scale,
-        #[weak] current_angle_label,
+        #[weak]
+        rotation_widget,
+        #[weak]
+        manual_scale,
+        #[weak]
+        current_angle_label,
         move |_| {
             rotation_widget.set_rotation_with_animation(90.0);
             manual_scale.set_value(90.0);
@@ -239,9 +231,12 @@ fn build_ui(application: &Application) {
     ));
 
     button_180.connect_clicked(glib::clone!(
-        #[weak] rotation_widget,
-        #[weak] manual_scale,
-        #[weak] current_angle_label,
+        #[weak]
+        rotation_widget,
+        #[weak]
+        manual_scale,
+        #[weak]
+        current_angle_label,
         move |_| {
             rotation_widget.set_rotation_with_animation(180.0);
             manual_scale.set_value(180.0);
@@ -250,9 +245,12 @@ fn build_ui(application: &Application) {
     ));
 
     button_270.connect_clicked(glib::clone!(
-        #[weak] rotation_widget,
-        #[weak] manual_scale,
-        #[weak] current_angle_label,
+        #[weak]
+        rotation_widget,
+        #[weak]
+        manual_scale,
+        #[weak]
+        current_angle_label,
         move |_| {
             rotation_widget.set_rotation_with_animation(270.0);
             manual_scale.set_value(270.0);
@@ -262,8 +260,10 @@ fn build_ui(application: &Application) {
 
     // Dragging manual scale changes the angle in real-time
     manual_scale.connect_value_changed(glib::clone!(
-        #[weak] rotation_widget,
-        #[weak] current_angle_label,
+        #[weak]
+        rotation_widget,
+        #[weak]
+        current_angle_label,
         move |scale| {
             let angle = scale.value();
             rotation_widget.set_rotation(SmearorRotation::Deg(angle as f32));
