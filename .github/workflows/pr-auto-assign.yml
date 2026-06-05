@@ -15,4 +15,4 @@ jobs:
   auto-assign:
     runs-on: ubuntu-24.04
     steps:
-      - uses: kentaro-m/auto-assign-action@v2.0.0
+      - uses: kentaro-m/auto-assign-action@v2.0.2
