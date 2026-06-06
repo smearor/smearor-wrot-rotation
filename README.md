@@ -142,9 +142,9 @@ The `RotationWidget` implements the `RotationControlHandler` trait for consisten
 - **`set_animation_overshoot(f64)`**: Configures the spring intensity for overshoot snap transitions.
 - **`set_rotation_with_animation(f64)`**: Programmatically triggers the advanced three-phase visual rotation-zoom snap sequence.
 
-## Input Transform
-
 ---
+
+## Input Transform
 
 ```mermaid
 graph LR
