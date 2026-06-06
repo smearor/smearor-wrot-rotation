@@ -23,8 +23,6 @@ click-through accuracy for transparent, non-overlapping geometric areas are trad
 hardware-accelerated GDK/GSK transforms to rotate arbitrary GTK4 widgets. It features complete input coordinate translation and pixel-exact Cairo region mask
 calculation, ensuring flawless interaction, touch-rotation gestures, and window transparency click-through.
 
----
-
 ## Description
 
 The `RotationWidget` (internally registered in GObject as `RotationWidget` subclassing `gtk4::Widget`) acts as a wrapper around any single GTK4 widget. Instead
@@ -57,6 +55,12 @@ GTK4's modular layout and rendering pipeline:
         - *Phase 2 (33–66%)*: Main rotation sweep.
         - *Phase 3 (66–100%)*: Rotation termination and zoom-in snap back (scale from `0.8` back to `1.0`).
     - Supports linear, ease-in-out, and overshoot physics, providing responsive, fluid feedback.
+
+---
+
+## How it works
+
+<img src="assets/smearor-wrot-rotation-widget.png">
 
 ---
 
@@ -137,3 +141,51 @@ The `RotationWidget` implements the `RotationControlHandler` trait for consisten
 - **`set_animation_speed(u64)`**: Adjusts the transition speed of the rotation/scaling sweep (in milliseconds).
 - **`set_animation_overshoot(f64)`**: Configures the spring intensity for overshoot snap transitions.
 - **`set_rotation_with_animation(f64)`**: Programmatically triggers the advanced three-phase visual rotation-zoom snap sequence.
+
+## Input Transform
+
+---
+
+```mermaid
+graph TD
+%% styling
+    classDef default fill: #1e1e1e, stroke: #333333, stroke-width: 1px, color: #ffffff
+    classDef widget fill: #00a1e4, stroke: #ffffff, stroke-width: 2px, color: #ffffff
+    classDef layout stroke: #00a1e4, stroke-width: 2px, stroke-dasharray: 5 5
+    classDef measure stroke: #dc0073, stroke-width: 2px, stroke-dasharray: 5 5
+    classDef event fill: #89fc00, stroke: #333333, stroke-width: 2px, color: #000000
+    classDef child_size stroke: #89fc00, stroke-width: 1px, stroke-dasharray: 5 5
+    classDef region fill: #f5b700, stroke: #333333, stroke-width: 1px, color: #000000
+    classDef transform fill: #04e762, stroke: #333333, stroke-width: 1px, color: #000
+
+    subgraph RotationWidget [RotationWidget Container]
+        A["Pointer Event (x, y)"] --> B{"Check click position"};
+
+    %% click region
+        B -- " within cairo::Region " --> C["input_transform(x, y)"];
+        B -- " in transparent corners " --> D["click through (ignore)"];
+
+    %% transformation
+        C -->|" -θ Rotation around center "| E["local_event (x', y')"];
+        E --> F["Child Widget (e.g. Button)"];
+    end
+
+%% layout calculation
+    subgraph RotatedLayout [Layout Manager]
+        G["Child Size (W x H)"] --> H["RotatedLayout::measure"];
+        H -->|" Bounds Tracking (sin/cos θ) "| I["Rotated Bounding Box"];
+    end
+
+    class A event;
+    class B measure;
+    class F widget;
+    class G child_size;
+    class H measure;
+    class I layout;
+    class D region;
+    class C transform;
+    class E transform;
+```
+
+    
+---
