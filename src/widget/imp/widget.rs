@@ -351,18 +351,18 @@ impl WidgetImpl for RotationWidgetImpl {
     fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
         self.parent_size_allocate(width, height, baseline);
         let widget = self.obj();
-        if let Some(surface) = widget.native().and_then(|n| n.surface()) {
-            if let Some(child) = widget.first_child() {
-                let angle = widget
-                    .layout_manager()
-                    .and_then(|lm| lm.downcast::<RotatedLayout>().ok())
-                    .map(|rl| rl.imp().rotation.get())
-                    .unwrap_or(0.0);
-                let (_, child_w, _, _) = child.measure(Orientation::Horizontal, -1);
-                let (_, child_h, _, _) = child.measure(Orientation::Vertical, -1);
-                let region = self.calculate_rotated_region_with_scale(width as f32, height as f32, child_w as f32, child_h as f32, angle);
-                surface.set_input_region(Some(&region));
-            }
+        if let Some(surface) = widget.native().and_then(|n| n.surface())
+            && let Some(child) = widget.first_child()
+        {
+            let angle = widget
+                .layout_manager()
+                .and_then(|lm| lm.downcast::<RotatedLayout>().ok())
+                .map(|rl| rl.imp().rotation.get())
+                .unwrap_or(0.0);
+            let (_, child_w, _, _) = child.measure(Orientation::Horizontal, -1);
+            let (_, child_h, _, _) = child.measure(Orientation::Vertical, -1);
+            let region = self.calculate_rotated_region_with_scale(width as f32, height as f32, child_w as f32, child_h as f32, angle);
+            surface.set_input_region(Some(&region));
         }
     }
 
