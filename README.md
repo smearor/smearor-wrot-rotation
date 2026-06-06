@@ -11,6 +11,8 @@ input region calculation.
 
 ---
 
+<img src="assets/smearor.png">
+
 ## Abstract
 
 In modern Linux desktop and compositing environments, rotating interactive visual elements (such as application windows, custom overlays, or touch interfaces)
