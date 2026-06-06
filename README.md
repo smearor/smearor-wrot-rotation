@@ -147,7 +147,7 @@ The `RotationWidget` implements the `RotationControlHandler` trait for consisten
 ---
 
 ```mermaid
-graph TD
+graph LR
 %% styling
     classDef default fill: #1e1e1e, stroke: #333333, stroke-width: 1px, color: #ffffff
     classDef widget fill: #00a1e4, stroke: #ffffff, stroke-width: 2px, color: #ffffff
