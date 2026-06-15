@@ -1,3 +1,4 @@
+use gtk4_layer_shell::Edge;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -44,6 +45,16 @@ impl SmearorRotation {
     pub fn is_vertical(&self) -> bool {
         let degrees = self.to_degrees();
         (degrees - 90.0).abs() < 0.1 || (degrees - 270.0).abs() < 0.1
+    }
+
+    pub fn anchor(&self) -> Option<Edge> {
+        Some(match self {
+            Self::Deg0 => Edge::Bottom,
+            Self::Deg90 => Edge::Left,
+            Self::Deg180 => Edge::Top,
+            Self::Deg270 => Edge::Right,
+            Self::Deg(_) => return None,
+        })
     }
 }
 
