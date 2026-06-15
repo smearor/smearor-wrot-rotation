@@ -17,6 +17,15 @@ pub enum SmearorRotation {
 }
 
 impl SmearorRotation {
+    pub fn new(degrees: f32) -> Self {
+        match degrees {
+            0.0 => Self::Deg0,
+            90.0 => Self::Deg90,
+            180.0 => Self::Deg180,
+            270.0 => Self::Deg270,
+            _ => Self::Deg(degrees),
+        }
+    }
     pub fn to_degrees(self) -> f32 {
         match self {
             Self::Deg0 => 0.0,
