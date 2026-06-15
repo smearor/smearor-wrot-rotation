@@ -35,6 +35,16 @@ impl SmearorRotation {
             Self::Deg(deg) => deg,
         }
     }
+
+    pub fn is_horizontal(&self) -> bool {
+        let degrees = self.to_degrees();
+        (degrees - 0.0).abs() < 0.1 || (degrees - 180.0).abs() < 0.1
+    }
+
+    pub fn is_vertical(&self) -> bool {
+        let degrees = self.to_degrees();
+        (degrees - 90.0).abs() < 0.1 || (degrees - 270.0).abs() < 0.1
+    }
 }
 
 impl From<&str> for SmearorRotation {
