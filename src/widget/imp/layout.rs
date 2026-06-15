@@ -3,16 +3,22 @@ use glib::subclass::object::ObjectImpl;
 use glib::subclass::prelude::ObjectSubclass;
 use gtk4::LayoutManager;
 use gtk4::Orientation;
+use gtk4::glib::Properties;
 use gtk4::graphene::Point;
 use gtk4::gsk::Transform;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::layout_manager::LayoutManagerImpl;
+use gtk4::subclass::prelude::DerivedObjectProperties;
 use std::cell::Cell;
 use tracing::debug;
 use tracing::trace;
 
+#[derive(Properties)]
+#[properties(wrapper_type = RotatedLayout)]
 pub struct RotatedLayoutImpl {
+    #[properties(get, set, notify)]
     pub rotation: Cell<f32>,
+    #[properties(get, set, notify)]
     pub scale: Cell<f32>,
 }
 
@@ -32,6 +38,7 @@ impl ObjectSubclass for RotatedLayoutImpl {
     type ParentType = LayoutManager;
 }
 
+#[glib::derived_properties]
 impl ObjectImpl for RotatedLayoutImpl {}
 
 impl LayoutManagerImpl for RotatedLayoutImpl {
