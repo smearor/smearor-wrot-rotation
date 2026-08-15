@@ -7,67 +7,37 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
+  APT_PACKAGES: curl build-essential libgtk-4-dev libgtk4-layer-shell-dev
+
+permissions:
+  contents: write
 
 jobs:
   release:
-    runs-on: ubuntu-latest
-    
+    name: Publish to crates.io
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
     steps:
-      - name: Checkout repository
+      - name: VCS Checkout
         uses: actions/checkout@v7
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y ${{ env.APT_PACKAGES }}
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          components: rustfmt, clippy
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libwayland-dev \
-            libxkbcommon-dev \
-            libegl1-mesa-dev \
-            libgles2-mesa-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libinput-dev \
-            libudev-dev \
-            libxkbcommon-x11-dev
-
-      - name: Cache cargo registry
-        uses: actions/cache@v6
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v6
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo build
-        uses: actions/cache@v6
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build in release mode
-        run: cargo build --release --workspace
-
-      - name: Create release archive
-        run: |
-          mkdir -p release
-          cp target/release/smearor-wrot release/
-          cp README.md LICENSE.md release/
-          tar -czf smearor-wrot-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz -C release .
-
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Build (Release Mode)
+        run: cargo build --release --verbose
+      - name: Publish to crates.io
+        run: cargo publish --locked --token ${{ secrets.CRATES_IO_TOKEN }}
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: smearor-wrot-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz
           draft: false
           prerelease: false
           generate_release_notes: true
