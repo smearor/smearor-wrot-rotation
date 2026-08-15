@@ -17,7 +17,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Infrastructure
 
-## [0.2.0] - 2026-08-15 (unreleased)
+---
+
+## [0.2.0] - 2026-08-15
 
 ### Added
 
@@ -34,3 +36,5 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Updated github action workflows
 - Fixed MSRV check in CI
 - Publish book and docs to gh-pages
+- Publish crate to crates.io
+
