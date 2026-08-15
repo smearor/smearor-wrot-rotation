@@ -79,6 +79,13 @@ fn build_ui(application: &Application) {
     grid.attach(&overshoot_label, 0, 2, 1, 1);
     grid.attach(&overshoot_scale, 1, 2, 1, 1);
 
+    // Control: Gesture Rotation Switch
+    let gesture_label = Label::new(Some("Enable Gesture Rotation:"));
+    gesture_label.set_halign(Align::Start);
+    let gesture_switch = Switch::builder().active(true).halign(Align::Start).build();
+    grid.attach(&gesture_label, 0, 3, 1, 1);
+    grid.attach(&gesture_switch, 1, 3, 1, 1);
+
     main_box.append(&grid);
 
     // Quick Snap Buttons
@@ -104,6 +111,7 @@ fn build_ui(application: &Application) {
     rotation_widget.set_animations_enabled(true);
     rotation_widget.set_animation_speed(500);
     rotation_widget.set_animation_overshoot(1.7);
+    rotation_widget.set_gesture_rotation_enabled(true);
 
     // Ensure it expands to fill remaining space nicely
     rotation_widget.set_hexpand(true);
@@ -198,6 +206,14 @@ fn build_ui(application: &Application) {
         move |scale| {
             let overshoot = scale.value();
             rotation_widget.set_animation_overshoot(overshoot);
+        }
+    ));
+
+    gesture_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |switch| {
+            rotation_widget.set_gesture_rotation_enabled(switch.is_active());
         }
     ));
 

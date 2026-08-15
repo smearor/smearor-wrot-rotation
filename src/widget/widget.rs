@@ -7,6 +7,7 @@ use crate::widget::layout::RotatedLayout;
 use gtk4::Accessible;
 use gtk4::Buildable;
 use gtk4::ConstraintTarget;
+use gtk4::PropagationPhase;
 use gtk4::Widget;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::*;
@@ -24,6 +25,18 @@ impl RotationWidget {
         let obj: Self = glib::Object::builder().build();
         obj.set_rotation(rotation);
         obj
+    }
+
+    /// Builder-style method to configure gesture rotation. Defaults to `true`.
+    pub fn with_gesture_rotation_enabled(self, enabled: bool) -> Self {
+        self.set_gesture_rotation_enabled(enabled);
+        self
+    }
+
+    /// Builder-style method to configure animations. Defaults to `true`.
+    pub fn with_animations_enabled(self, enabled: bool) -> Self {
+        self.set_animations_enabled(enabled);
+        self
     }
 
     /// Transform input coordinates based on current rotation
@@ -62,6 +75,19 @@ impl RotationWidget {
 
     pub fn set_animations_enabled(&self, enabled: bool) {
         self.imp().animations_enabled.set(enabled);
+    }
+
+    /// Enables or disables rotation via gesture. Defaults to `true`.
+    pub fn set_gesture_rotation_enabled(&self, enabled: bool) {
+        self.imp().gesture_rotation_enabled.set(enabled);
+        let phase = if enabled {
+            PropagationPhase::Capture
+        } else {
+            PropagationPhase::None
+        };
+        if let Some(ref gesture) = *self.imp().rotate_gesture.borrow() {
+            gesture.set_propagation_phase(phase);
+        }
     }
 
     pub fn set_animation_overshoot(&self, overshoot: f64) {
