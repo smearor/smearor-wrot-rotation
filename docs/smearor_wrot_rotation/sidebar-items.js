@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["animation","layer","rotation","widget"]};
