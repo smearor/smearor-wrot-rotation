@@ -72,3 +72,56 @@ impl From<&str> for SmearorRotation {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_smearor_rotation_deg0() {
+        let rotation = SmearorRotation::Deg0;
+        assert_eq!(rotation.to_degrees(), 0.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_deg90() {
+        let rotation = SmearorRotation::Deg90;
+        assert_eq!(rotation.to_degrees(), 90.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_deg180() {
+        let rotation = SmearorRotation::Deg180;
+        assert_eq!(rotation.to_degrees(), 180.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_deg270() {
+        let rotation = SmearorRotation::Deg270;
+        assert_eq!(rotation.to_degrees(), 270.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_custom() {
+        let rotation = SmearorRotation::Deg(45.0);
+        assert_eq!(rotation.to_degrees(), 45.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_from_str() {
+        let rotation = SmearorRotation::from("90");
+        assert_eq!(rotation.to_degrees(), 90.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_from_str_deg() {
+        let rotation = SmearorRotation::from("deg180");
+        assert_eq!(rotation.to_degrees(), 180.0);
+    }
+
+    #[test]
+    fn test_smearor_rotation_from_str_custom() {
+        let rotation = SmearorRotation::from("45");
+        assert_eq!(rotation.to_degrees(), 45.0);
+    }
+}
