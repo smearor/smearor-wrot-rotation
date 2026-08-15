@@ -40,7 +40,7 @@ jobs:
       - name: Version of cargo msrv
         run: cargo msrv --version
       - name: Run cargo msrv
-        run: cargo msrv --path smearor-wrot-wrapper --output-format json verify
+        run: cargo msrv --output-format json verify
       - name: Run cargo msrv on verify failure
         if: ${{ failure() }}
         run: cargo msrv find --output-format json
