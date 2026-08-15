@@ -24,4 +24,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Make layer shell dependency optional (enabled by default)
-- Rotation gesture is optional (enabled by default)
+- Make rotation gesture optional (enabled by default)
+
+### Infrastructure
+
+- Updated github action workflows
+
