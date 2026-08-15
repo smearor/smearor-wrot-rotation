@@ -1,0 +1,56 @@
+name: Book
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "book/**"
+      - "CHANGELOG.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE.md"
+      - "README.md"
+      - "SECURITY.md"
+      - ".github/workflows/book.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "book/**"
+      - "CHANGELOG.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE.md"
+      - "README.md"
+      - "SECURITY.md"
+      - ".github/workflows/book.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  book:
+    name: Book
+    runs-on: ubuntu-24.04
+    steps:
+      - name: VCS Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: 'latest'
+      - name: Install preprocessor mdbook-mermaid
+        uses: taiki-e/cache-cargo-install-action@v3
+        with:
+          tool: mdbook-mermaid
+      - name: Build Book
+        working-directory: ./book
+        run: mdbook build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./book/book
+          destination_dir: book
