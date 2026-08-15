@@ -36,5 +36,5 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Updated github action workflows
 - Fixed MSRV check in CI
 - Publish book and docs to gh-pages
-- Publish crate to crates.io
+- Publish crate to crates.io (CI)
 
