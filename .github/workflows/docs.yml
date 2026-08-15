@@ -18,7 +18,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  APT_PACKAGES: curl build-essential libgtk-4-dev libgtk4-layer-shell-dev
+  APT_PACKAGES: curl build-essential git libgtk-4-dev libgtk4-layer-shell-dev
+
+permissions:
+  contents: write
 
 jobs:
   docs:
