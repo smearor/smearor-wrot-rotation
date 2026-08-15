@@ -3,3 +3,9 @@ authors = ["Andreas Schaeffer <hanack@nooblounge.net>"]
 language = "en"
 src = "src"
 title = "smearor-wrot-rotation Documentation"
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html]
+additional-js = ["mermaid.min.js", "mermaid-init.js"]

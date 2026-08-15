@@ -4,7 +4,9 @@
 
 `RotationWidget` delegates its measurement and layout to a custom `RotatedLayout` manager.
 
-- **`measure`**: Computes the size of the rotated bounding box containing the rotated child widget.
+- **`measure`**: Computes the size of the rotated bounding box containing the rotated child widget. For a child with natural size $(W \times H)$ rotated by angle $\theta$, the bounding box dimensions are:
+  - $\text{bbox\_width} = W \cdot |\cos\theta| + H \cdot |\sin\theta|$
+  - $\text{bbox\_height} = W \cdot |\sin\theta| + H \cdot |\cos\theta|$
 - **`allocate`**: Translates to the center, applies the GSK transformation matrix (rotate, scale), and translates back to draw the child on the screen.
 
 ## Coordinate Transformation
@@ -32,3 +34,5 @@ This rasterization line-scanning routine calculates a pixel-precise polygon regi
 ## Gesture Rotation
 
 The `RotationWidget` processes `GestureRotate` events by default. This can be optionally disabled via `set_gesture_rotation_enabled(false)` or `with_gesture_rotation_enabled(false)` at construction time. When disabled, the gesture controller's propagation phase is set to `None`, meaning it receives no events at all — the callbacks are never called, and the controller does not claim two-finger gesture sequences. This ensures child widgets retain full access to multi-touch gestures (e.g., pinch-to-zoom). The controller remains registered on the widget, allowing the feature to be toggled at runtime. Coordinate transformation and input region masks continue to function normally for programmatic rotations regardless of the gesture setting.
+
+For a full visual overview of the input transform flow and architecture, see the [Architecture](architecture.md) page.
