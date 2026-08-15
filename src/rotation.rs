@@ -1,4 +1,3 @@
-use gtk4_layer_shell::Edge;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -47,7 +46,9 @@ impl SmearorRotation {
         (degrees - 90.0).abs() < 0.1 || (degrees - 270.0).abs() < 0.1
     }
 
-    pub fn anchor(&self) -> Option<Edge> {
+    #[cfg(feature = "layer-shell")]
+    pub fn anchor(&self) -> Option<gtk4_layer_shell::Edge> {
+        use gtk4_layer_shell::Edge;
         Some(match self {
             Self::Deg0 => Edge::Bottom,
             Self::Deg90 => Edge::Left,

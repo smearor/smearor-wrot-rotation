@@ -12,13 +12,17 @@ rust-version = "1.92.0"
 [dependencies]
 glib = "0.22"
 gtk4 = { version = "0.11", features = ["v4_20"] }
-gtk4-layer-shell = { version = "0.8.0" }
+gtk4-layer-shell = { version = "0.8.1", optional = true }
 miette = "7.6"
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 
+[features]
+default = ["layer-shell"]
+layer-shell = ["dep:gtk4-layer-shell"]
+
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(fn_traits)', 'cfg(unboxed_closures)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(fn_traits)', 'cfg(unboxed_closures)', 'cfg(feature, values("layer-shell"))'] }
 
 [workspace.lints.clippy]
 non_std_lazy_statics = "warn"
