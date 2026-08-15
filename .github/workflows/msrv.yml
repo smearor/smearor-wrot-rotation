@@ -21,6 +21,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  APT_PACKAGES: curl build-essential libgtk-4-dev libgtk4-layer-shell-dev
 
 jobs:
   build:
@@ -29,6 +30,10 @@ jobs:
     steps:
       - name: VCS Checkout
         uses: actions/checkout@v7
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.APT_PACKAGES }}
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -36,7 +41,7 @@ jobs:
       - name: Install cargo msrv
         uses: taiki-e/cache-cargo-install-action@v3
         with:
-          tool: cargo-msrv@0.16.0-beta.25
+          tool: cargo-msrv@0.19.3
       - name: Version of cargo msrv
         run: cargo msrv --version
       - name: Run cargo msrv
