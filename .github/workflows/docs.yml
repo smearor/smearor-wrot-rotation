@@ -1,0 +1,50 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "src/**/*.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "src/**/*.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/docs.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+  APT_PACKAGES: curl build-essential libgtk-4-dev libgtk4-layer-shell-dev
+
+jobs:
+  docs:
+    name: Documentation
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
+    steps:
+      - name: VCS Checkout
+        uses: actions/checkout@v7
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y ${{ env.APT_PACKAGES }}
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Run cargo doc
+        run: cargo doc --no-deps --document-private-items --workspace --verbose
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          destination_dir: docs

@@ -19,6 +19,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.2.0] - 2026-08-15 (unreleased)
 
+### Added
+
+- Book
+- Rustdoc
+
 ### Changed
 
 - Make layer shell dependency optional (enabled by default)
@@ -27,4 +32,5 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Infrastructure
 
 - Updated github action workflows
-
+- Fixed MSRV check in CI
+- Publish book and docs to gh-pages
