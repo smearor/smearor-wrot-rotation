@@ -80,11 +80,7 @@ impl RotationWidget {
     /// Enables or disables rotation via gesture. Defaults to `true`.
     pub fn set_gesture_rotation_enabled(&self, enabled: bool) {
         self.imp().gesture_rotation_enabled.set(enabled);
-        let phase = if enabled {
-            PropagationPhase::Capture
-        } else {
-            PropagationPhase::None
-        };
+        let phase = if enabled { PropagationPhase::Capture } else { PropagationPhase::None };
         if let Some(ref gesture) = *self.imp().rotate_gesture.borrow() {
             gesture.set_propagation_phase(phase);
         }

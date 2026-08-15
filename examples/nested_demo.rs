@@ -21,9 +21,7 @@ use smearor_wrot_rotation::RotationWidget;
 use smearor_wrot_rotation::SmearorRotation;
 
 fn main() -> glib::ExitCode {
-    let application = Application::builder()
-        .application_id("io.smearor.wrot.rotation.nested_demo")
-        .build();
+    let application = Application::builder().application_id("io.smearor.wrot.rotation.nested_demo").build();
 
     application.connect_activate(build_ui);
     application.run()
@@ -56,11 +54,7 @@ fn build_ui(application: &Application) {
     main_box.append(&title_label);
 
     // Grid for controlling outer widget properties (stays outside the rotation)
-    let outer_grid = gtk4::Grid::builder()
-        .row_spacing(8)
-        .column_spacing(12)
-        .margin_bottom(12)
-        .build();
+    let outer_grid = gtk4::Grid::builder().row_spacing(8).column_spacing(12).margin_bottom(12).build();
 
     // Control: Outer Animation Switch
     let outer_anim_label = Label::new(Some("Outer Animations:"));
@@ -114,11 +108,7 @@ fn build_ui(application: &Application) {
     inner_button_box.append(&inner_button_270);
 
     // Inner controls grid — placed inside the outer RotationWidget so they rotate with it
-    let inner_grid = gtk4::Grid::builder()
-        .row_spacing(8)
-        .column_spacing(12)
-        .margin_bottom(8)
-        .build();
+    let inner_grid = gtk4::Grid::builder().row_spacing(8).column_spacing(12).margin_bottom(8).build();
 
     let inner_anim_label = Label::new(Some("Inner Animations:"));
     inner_anim_label.set_halign(Align::Start);
@@ -133,10 +123,7 @@ fn build_ui(application: &Application) {
     inner_grid.attach(&inner_gesture_switch, 1, 1, 1, 1);
 
     // Inner angle label and manual slider (also inside the outer rotation)
-    let inner_angle_label = Label::builder()
-        .label("Inner Angle: 0.00°")
-        .margin_top(4)
-        .build();
+    let inner_angle_label = Label::builder().label("Inner Angle: 0.00°").margin_top(4).build();
 
     let inner_manual_label = Label::new(Some("Inner Manual Angle:"));
     let inner_manual_scale = Scale::with_range(Orientation::Horizontal, 0.0, 360.0, 1.0);
@@ -169,11 +156,7 @@ fn build_ui(application: &Application) {
     inner_rotation_widget.set_valign(Align::Center);
 
     // Child widget inside the inner RotationWidget
-    let inner_child_frame = Frame::builder()
-        .label("Inner Rotated Content")
-        .width_request(200)
-        .height_request(200)
-        .build();
+    let inner_child_frame = Frame::builder().label("Inner Rotated Content").width_request(200).height_request(200).build();
 
     let inner_child_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
@@ -199,9 +182,7 @@ fn build_ui(application: &Application) {
         }
     ));
 
-    let inner_text_entry = Entry::builder()
-        .placeholder_text("Type nested rotated text...")
-        .build();
+    let inner_text_entry = Entry::builder().placeholder_text("Type nested rotated text...").build();
 
     inner_child_box.append(&inner_child_label);
     inner_child_box.append(&inner_click_button);
@@ -262,10 +243,7 @@ fn build_ui(application: &Application) {
     main_box.append(&viewport_frame);
 
     // Outer status label and manual slider (outside the rotation)
-    let outer_angle_label = Label::builder()
-        .label("Outer Angle: 0.00°")
-        .margin_bottom(6)
-        .build();
+    let outer_angle_label = Label::builder().label("Outer Angle: 0.00°").margin_bottom(6).build();
     main_box.append(&outer_angle_label);
 
     let outer_manual_label = Label::new(Some("Outer Manual Angle:"));
