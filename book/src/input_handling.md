@@ -28,3 +28,7 @@ pub trait RotatedRegionCalculator
 ```
 
 This rasterization line-scanning routine calculates a pixel-precise polygon region representing the actual rotated visual frame. This region is then supplied to the window's GDK surface using `set_input_region()`.
+
+## Gesture Rotation
+
+The `RotationWidget` processes `GestureRotate` events by default. This can be optionally disabled via `set_gesture_rotation_enabled(false)` or `with_gesture_rotation_enabled(false)` at construction time. When disabled, the gesture controller's propagation phase is set to `None`, meaning it receives no events at all — the callbacks are never called, and the controller does not claim two-finger gesture sequences. This ensures child widgets retain full access to multi-touch gestures (e.g., pinch-to-zoom). The controller remains registered on the widget, allowing the feature to be toggled at runtime. Coordinate transformation and input region masks continue to function normally for programmatic rotations regardless of the gesture setting.

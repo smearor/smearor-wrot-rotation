@@ -37,6 +37,10 @@ pub struct RotationWidgetImpl {
     pub rotation_zoom_animation: RefCell<Option<RotationZoomAnimation>>,
     pub animations_enabled: Cell<bool>,
     pub animation_overshoot: Cell<f64>,
+    /// Whether rotation via gesture is active. Defaults to `true`.
+    pub gesture_rotation_enabled: Cell<bool>,
+    /// Reference to the rotate gesture controller for propagation phase toggling.
+    pub rotate_gesture: RefCell<Option<gtk4::GestureRotate>>,
 }
 
 #[glib::object_subclass]
@@ -54,13 +58,17 @@ impl ObjectImpl for RotationWidgetImpl {
     fn constructed(&self) {
         self.parent_constructed();
 
+        // Gesture rotation is enabled by default
+        self.gesture_rotation_enabled.set(true);
+
         // Add gesture recognizers for rotation and pinch
         let widget = self.obj();
 
         // Rotate gesture
         let rotate_gesture = gtk4::GestureRotate::new();
-        rotate_gesture.set_propagation_phase(PropagationPhase::Bubble);
+        rotate_gesture.set_propagation_phase(PropagationPhase::Capture);
         widget.add_controller(rotate_gesture.clone().upcast::<gtk4::EventController>());
+        *self.rotate_gesture.borrow_mut() = Some(rotate_gesture.clone());
 
         let widget_clone = widget.clone();
         let initial_rotation = Rc::new(RefCell::new(0.0f32));
@@ -109,8 +117,6 @@ impl ObjectImpl for RotationWidgetImpl {
         let feedback_rotation_clone = feedback_rotation.clone();
         let direction_determined_clone = direction_determined.clone();
         let rotation_applied_clone = rotation_applied.clone();
-        // Prevents gesture conflicts with pointer events
-        rotate_gesture.set_propagation_phase(PropagationPhase::Capture);
         rotate_gesture.connect_angle_changed(move |_gesture, _angle, angle_delta| {
             debug!("angle_delta {angle_delta}");
             // Stop processing if rotation was already applied
