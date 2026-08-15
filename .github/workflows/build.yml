@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: VCS Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install latest nightly
         uses: dtolnay/rust-toolchain@master
         with:
@@ -29,7 +29,7 @@ jobs:
     name: Check Changelog
     runs-on: ubuntu-24.04
     steps:
-      - uses: tarides/changelog-check-action@v3
+      - uses: tarides/changelog-check-action@v4
         with:
           changelog: CHANGELOG.md
     if: github.actor != 'dependabot[bot]'
@@ -46,7 +46,7 @@ jobs:
         target: [ x86_64-unknown-linux-gnu ]
     steps:
       - name: VCS Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install system dependencies
         run: |
           apt-get update
@@ -76,7 +76,7 @@ jobs:
       image: ubuntu:26.04
     steps:
       - name: VCS Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install system dependencies
         run: |
           apt-get update
@@ -104,7 +104,7 @@ jobs:
       image: ubuntu:26.04
     steps:
       - name: VCS Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install system dependencies
         run: |
           apt-get update
@@ -129,7 +129,7 @@ jobs:
       image: ubuntu:26.04
     steps:
       - name: VCS Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install system dependencies
         run: |
           apt-get update
