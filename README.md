@@ -1,9 +1,12 @@
 # smearor-wrot-rotation
 
-[![Version](https://img.shields.io/badge/version-0.1.0-f5b700.svg)](https://github.com/smearor/smearor-wrot-rotation)
+[![Version](https://img.shields.io/badge/version-0.2.0-f5b700.svg)](https://github.com/smearor/smearor-wrot-rotation)
 [![Rust Edition](https://img.shields.io/badge/rust-2024-00a1e4.svg)](https://doc.rust-lang.org/edition-guide/rust-2024/index.html)
 [![GTK4](https://img.shields.io/badge/GTK4-v4__20-dc0073.svg)](https://gtk-rs.org/gtk4-rs/stable/latest/docs/gtk4/)
 [![License](https://img.shields.io/badge/license-MIT-04e762.svg)](LICENSE.md)
+[![Book](https://img.shields.io/badge/book-mdBook-89fc00.svg)](https://smearor.github.io/smearor-wrot-rotation/book/)
+[![Docs](https://img.shields.io/badge/docs-rustdoc-04e762.svg)](https://smearor.github.io/smearor-wrot-rotation/docs/)
+[![crates.io](https://img.shields.io/badge/crates.io-publish-dc0073.svg)](https://crates.io/crates/smearor-wrot-rotation)
 
 `smearor-wrot-rotation` is a high-performance, robust, and idiomatically written Rust library providing a specialized GTK4 widget (`RotationWidget`) capable of
 smoothly rotating any child GTK4 widget. It integrates automated, pixel-perfect bidirectional input/output coordinate transformations and dynamic window/surface
