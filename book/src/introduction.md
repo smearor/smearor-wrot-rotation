@@ -11,3 +11,7 @@ Rotating elements in modern desktop managers or complex graphical overlays is no
 1. **Custom GTK4 Layout Subclassing**: Integrates seamlessly with the GTK4 size measurement and layout allocation pipeline.
 2. **Reverse Coordinate Mapping**: Maps external pointer (mouse and touch) events to rotated coordinates so the child can be fully interactive.
 3. **Transparent Click-Through Regions**: Dynamically sets exact physical bounds onto the native window surface, letting mouse events pass through empty space.
+
+## Getting Started
+
+Head over to the [Quick Start](quickstart.md) page to get up and running in minutes. For a visual overview of how the widget works internally, see the [Architecture](architecture.md) page.

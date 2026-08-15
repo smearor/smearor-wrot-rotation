@@ -7,8 +7,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## [0.0.0-alpha-1] - 2026-xx-xx
-
 ### Added
 
 ### Changed

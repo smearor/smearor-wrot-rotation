@@ -41,6 +41,13 @@ let rotation_widget = RotationWidget::new(SmearorRotation::Deg0)
     .with_gesture_rotation_enabled(true);
 ```
 
+The `with_animations_enabled` builder method is also available:
+
+```rust
+let rotation_widget = RotationWidget::new(SmearorRotation::Deg0)
+    .with_animations_enabled(false);
+```
+
 ### Runtime
 
 Use `set_gesture_rotation_enabled` to toggle at any time:
@@ -68,3 +75,7 @@ pub enum SmearorRotation {
     Deg(f32), // Arbitrary angle in degrees
 }
 ```
+
+For the complete API including `new()`, `to_degrees()`, `is_horizontal()`, `is_vertical()`, `anchor()`, string parsing, and serde support, see the [SmearorRotation Enum](rotation.md) detail page.
+
+For all builder methods, setter methods, and the `RotationControlHandler` trait, see the [API Reference](api.md) page.

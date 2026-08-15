@@ -60,7 +60,7 @@ GTK4's modular layout and rendering pipeline:
 
 ## How it works
 
-<img src="assets/smearor-wrot-rotation-widget.png">
+<img src="book/src/assets/smearor-wrot-rotation-widget.png">
 
 ---
 
@@ -107,8 +107,8 @@ fn main() -> glib::ExitCode {
 
 ## Features
 
-- **Flexible Rotations**: Standard snapped orientations ($0^\circ$, $90^\circ$, $180^\circ$, $270^\circ$) as well as arbitrary float
-  angles ($deg \in [0.0, 360.0]$) via the `SmearorRotation` enum.
+- **Flexible Rotations**: Standard snapped orientations ($0^\circ$, $90^\circ$, $180^\circ$, $270^\circ$) as well as arbitrary float angles
+  ($deg \in [0.0, 360.0]$) via the `SmearorRotation` enum.
 - **Bidirectional Coordinate Mapping**: Perfect coordinate translations using `input_transform` to make sure all mouse and touch events land exactly where they
   should.
 - **Dynamic Cairo Input Regions**: Dynamically recalculates native input regions based on layout size, scale, and angle using a fast line-scanning solver.
