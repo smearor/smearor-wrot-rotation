@@ -77,6 +77,33 @@ impl RotationWidget {
         self.imp().animations_enabled.set(enabled);
     }
 
+    /// Builder-style method to configure the surface input-region clamp.
+    /// Defaults to `true`.
+    pub fn with_input_region_enabled(self, enabled: bool) -> Self {
+        self.set_input_region_enabled(enabled);
+        self
+    }
+
+    /// Enables or disables clamping the native surface's input region to the
+    /// rotated rect in `size_allocate`. Defaults to `true`.
+    ///
+    /// The clamp is surface-global: everything outside the region becomes
+    /// click-through. Keep it enabled for surface-filling widgets (the
+    /// layer-shell case); disable it when this widget is nested inside a
+    /// layout, or the rest of the window loses input.
+    pub fn set_input_region_enabled(&self, enabled: bool) {
+        self.imp().input_region_enabled.set(enabled);
+        if !enabled && let Some(surface) = self.native().and_then(|n| n.surface()) {
+            surface.set_input_region(None);
+        }
+        self.queue_allocate();
+    }
+
+    /// Whether the surface input-region clamp is active.
+    pub fn input_region_enabled(&self) -> bool {
+        self.imp().input_region_enabled.get()
+    }
+
     /// Enables or disables rotation via gesture. Defaults to `true`.
     pub fn set_gesture_rotation_enabled(&self, enabled: bool) {
         self.imp().gesture_rotation_enabled.set(enabled);

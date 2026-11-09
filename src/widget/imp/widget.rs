@@ -39,6 +39,10 @@ pub struct RotationWidgetImpl {
     pub animation_overshoot: Cell<f64>,
     /// Whether rotation via gesture is active. Defaults to `true`.
     pub gesture_rotation_enabled: Cell<bool>,
+    /// Whether `size_allocate` clamps the native surface's input region to the
+    /// rotated rect. Defaults to `true` (layer-shell consumers); nested widgets
+    /// must opt out - the clamp is surface-global.
+    pub input_region_enabled: Cell<bool>,
     /// Reference to the rotate gesture controller for propagation phase toggling.
     pub rotate_gesture: RefCell<Option<gtk4::GestureRotate>>,
 }
@@ -60,6 +64,10 @@ impl ObjectImpl for RotationWidgetImpl {
 
         // Gesture rotation is enabled by default
         self.gesture_rotation_enabled.set(true);
+        // Input-region clamping is enabled by default - the layer-shell
+        // fullscreen case; nested widgets opt out via
+        // `set_input_region_enabled(false)`.
+        self.input_region_enabled.set(true);
 
         // Add gesture recognizers for rotation and pinch
         let widget = self.obj();
@@ -356,8 +364,12 @@ impl ObjectImpl for RotationWidgetImpl {
 impl WidgetImpl for RotationWidgetImpl {
     fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
         self.parent_size_allocate(width, height, baseline);
+        if !self.input_region_enabled.get() {
+            return;
+        }
         let widget = self.obj();
-        if let Some(surface) = widget.native().and_then(|n| n.surface())
+        if let Some(native) = widget.native()
+            && let Some(surface) = native.surface()
             && let Some(child) = widget.first_child()
         {
             let angle = widget
@@ -368,7 +380,25 @@ impl WidgetImpl for RotationWidgetImpl {
             let (_, child_w, _, _) = child.measure(Orientation::Horizontal, -1);
             let (_, child_h, _, _) = child.measure(Orientation::Vertical, -1);
             let region = self.calculate_rotated_region_with_scale(width as f32, height as f32, child_w as f32, child_h as f32, angle);
+            // `set_input_region` expects surface coordinates; the computed
+            // region is widget-space (0..w x 0..h) - translate by the
+            // widget's origin inside the native. Only exact when ancestor
+            // transforms are pure translations.
+            if let Some(origin) = widget.compute_point(&native, &gtk4::graphene::Point::new(0.0, 0.0)) {
+                region.translate(origin.x().round() as i32, origin.y().round() as i32);
+            }
             surface.set_input_region(Some(&region));
+        }
+    }
+
+    fn unmap(&self) {
+        self.parent_unmap();
+        // The surface's input region outlives this widget - reset it so a
+        // removed/hidden widget never leaves the surface clamped.
+        if self.input_region_enabled.get()
+            && let Some(surface) = self.obj().native().and_then(|n| n.surface())
+        {
+            surface.set_input_region(None);
         }
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "smearor-wrot-rotation"
-version = "0.2.0"
+version = "0.2.1"
 description = "GTK4 widget for smoothly rotating any child widget with pixel-perfect input coordinate transformation and dynamic input region masking"
 authors = ["Andreas Schaeffer <hanack@nooblounge.net>"]
 edition = "2024"
