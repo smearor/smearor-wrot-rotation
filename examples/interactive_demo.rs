@@ -86,6 +86,13 @@ fn build_ui(application: &Application) {
     grid.attach(&gesture_label, 0, 3, 1, 1);
     grid.attach(&gesture_switch, 1, 3, 1, 1);
 
+    // Control: Natural Child Size Switch (legacy inverse-solve vs natural size)
+    let natural_child_label = Label::new(Some("Natural Child Size:"));
+    natural_child_label.set_halign(Align::Start);
+    let natural_child_switch = Switch::builder().active(false).halign(Align::Start).build();
+    grid.attach(&natural_child_label, 0, 4, 1, 1);
+    grid.attach(&natural_child_switch, 1, 4, 1, 1);
+
     main_box.append(&grid);
 
     // Quick Snap Buttons
@@ -214,6 +221,14 @@ fn build_ui(application: &Application) {
         rotation_widget,
         move |switch| {
             rotation_widget.set_gesture_rotation_enabled(switch.is_active());
+        }
+    ));
+
+    natural_child_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |switch| {
+            rotation_widget.set_natural_child_size_enabled(switch.is_active());
         }
     ));
 

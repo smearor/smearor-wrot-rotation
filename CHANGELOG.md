@@ -7,6 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.2.2] - 2026-11-11
+
+### Added
+
+- `RotationWidget::set_natural_child_size_enabled` /
+  `with_natural_child_size_enabled` / `natural_child_size_enabled` -
+  opt-in for allocating the child its measured natural size. Default
+  `false` keeps the legacy inverse-solve allocation, which is
+  ill-conditioned near 45° (and symmetric bands) and shrank non-square
+  children into a smaller square. Enabled, the child keeps its natural
+  size; `measure` already reports the rotated bounding box.
+- `examples/interactive_demo.rs` and `examples/nested_demo.rs` gained a
+  "Natural Child Size" switch to compare both allocation modes live.
+
 ## [0.2.1] - 2026-11-09
 
 ### Added

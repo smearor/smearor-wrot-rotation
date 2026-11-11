@@ -20,6 +20,13 @@ pub struct RotatedLayoutImpl {
     pub rotation: Cell<f32>,
     #[properties(get, set, notify)]
     pub scale: Cell<f32>,
+    /// When `true`, the child is allocated its measured natural size instead
+    /// of solving which rotated child size reproduces the allocation. The
+    /// inverse solve is ill-conditioned near 45 degrees (and symmetric bands),
+    /// where it shrinks non-square children into a square. Defaults to
+    /// `false` to preserve the legacy allocation behavior.
+    #[properties(get, set, notify)]
+    pub natural_child_size: Cell<bool>,
 }
 
 impl Default for RotatedLayoutImpl {
@@ -27,6 +34,7 @@ impl Default for RotatedLayoutImpl {
         Self {
             rotation: Cell::new(0.0),
             scale: Cell::new(1.0),
+            natural_child_size: Cell::new(false),
         }
     }
 }
@@ -51,30 +59,34 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
         let abs_sin = angle_rad.sin().abs();
         while let Some(ref c) = child {
             if c.should_layout() {
-                let denom = abs_cos * abs_cos - abs_sin * abs_sin;
-                let (target_child_w, target_child_h) = if denom.abs() < 0.9 {
-                    // Sonderfall 45°, 135° etc. (Matrix singulär)
-                    // Hier vereinfacht: Kind quadratisch einpassen
-                    let s = (width as f32 / (abs_cos + abs_sin)) as i32;
-                    (s, s)
+                let (target_child_w, target_child_h) = if self.natural_child_size.get() {
+                    // The child keeps its measured natural size: `measure`
+                    // reports the rotated bounding box, so the allocation
+                    // always contains the rotated child.
+                    let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
+                    let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
+                    (child_nat_w, child_nat_h)
                 } else {
-                    let w_c = (width as f32 * abs_cos - height as f32 * abs_sin) / denom;
-                    let h_c = (height as f32 * abs_cos - width as f32 * abs_sin) / denom;
-                    (w_c as i32, h_c as i32)
+                    let denom = abs_cos * abs_cos - abs_sin * abs_sin;
+                    if denom.abs() < 0.9 {
+                        // Sonderfall 45°, 135° etc. (Matrix singulär)
+                        // Hier vereinfacht: Kind quadratisch einpassen
+                        let s = (width as f32 / (abs_cos + abs_sin)) as i32;
+                        (s, s)
+                    } else {
+                        let w_c = (width as f32 * abs_cos - height as f32 * abs_sin) / denom;
+                        let h_c = (height as f32 * abs_cos - width as f32 * abs_sin) / denom;
+                        (w_c as i32, h_c as i32)
+                    }
                 };
 
-                // let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
-                // let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
-                // trace!("child_nat_w {child_nat_w} child_nat_h {child_nat_h}");
                 let transform = Transform::new()
                     .translate(&Point::new(width as f32 / 2.0, height as f32 / 2.0))
                     .rotate(angle_deg)
                     .scale(current_scale, current_scale)
-                    // .translate(&Point::new(child_nat_w as f32 / -2.0, child_nat_h as f32 / -2.0));
                     .translate(&Point::new(target_child_w as f32 / -2.0, target_child_h as f32 / -2.0));
 
                 trace!("width {target_child_w} height {target_child_h} baseline {baseline} transform {transform:?}");
-                // c.allocate(width, height, baseline, Some(transform));
                 c.allocate(target_child_w, target_child_h, baseline, Some(transform));
             }
             child = c.next_sibling();

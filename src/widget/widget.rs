@@ -104,6 +104,45 @@ impl RotationWidget {
         self.imp().input_region_enabled.get()
     }
 
+    /// Builder-style method to configure natural child size allocation.
+    /// Defaults to `false` (legacy inverse-solve allocation).
+    pub fn with_natural_child_size_enabled(self, enabled: bool) -> Self {
+        self.set_natural_child_size_enabled(enabled);
+        self
+    }
+
+    /// Enables or disables natural child size allocation. Defaults to
+    /// `false`.
+    ///
+    /// With the legacy allocation (`false`) the layout solves which child
+    /// size, rotated, reproduces the allocation - ill-conditioned near 45°,
+    /// where the child shrinks into a square. Enabled, the child keeps its
+    /// measured natural size; `measure` already reports the rotated bounding
+    /// box, so the allocation always contains the rotated child.
+    pub fn set_natural_child_size_enabled(&self, enabled: bool) {
+        let Some(layout) = self.layout_manager() else {
+            error!("Failed to get layout manager in set_natural_child_size_enabled");
+            return;
+        };
+        let Ok(rotated_layout) = layout.downcast::<RotatedLayout>() else {
+            error!("Layout manager is not RotatedLayout in set_natural_child_size_enabled");
+            return;
+        };
+        rotated_layout.imp().natural_child_size.set(enabled);
+        self.queue_allocate();
+    }
+
+    /// Whether the child is allocated its measured natural size.
+    pub fn natural_child_size_enabled(&self) -> bool {
+        let Some(layout) = self.layout_manager() else {
+            return false;
+        };
+        layout
+            .downcast::<RotatedLayout>()
+            .map(|rotated_layout| rotated_layout.imp().natural_child_size.get())
+            .unwrap_or(false)
+    }
+
     /// Enables or disables rotation via gesture. Defaults to `true`.
     pub fn set_gesture_rotation_enabled(&self, enabled: bool) {
         self.imp().gesture_rotation_enabled.set(enabled);
