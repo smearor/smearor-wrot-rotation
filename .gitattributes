@@ -1,3 +1,15 @@
 book/** linguist-documentation
 book/book/** linguist-generated=true
 tools/* linguist-vendored
+
+# Binary assets must not get text normalization.
+assets/** -text
+crates/*/resources/** -text
+
+*.rs text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.ftl text eol=lf
+*.yml text eol=lf
+*.css text eol=lf
+*.svg text eol=lf
