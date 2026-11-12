@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RotationZoomAnimation"]};
+window.SIDEBAR_ITEMS = {"struct":["AnimationValues","RotationZoomAnimation"]};
