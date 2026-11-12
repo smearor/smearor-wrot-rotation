@@ -1,17 +1,19 @@
 use crate::animation::functions::easing::EasingFunction;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::SmoothingAlpha;
 use std::time::Duration;
 use std::time::Instant;
 
 pub struct RotationAnimation {
-    start_value: f64,
-    end_value: f64,
+    start_value: RotationRad,
+    end_value: RotationRad,
     duration: Duration,
     easing_function: EasingFunction,
     start_time: Option<Instant>,
 }
 
 impl RotationAnimation {
-    pub fn new(start_value: f64, end_value: f64, duration: Duration, easing_function: EasingFunction) -> Self {
+    pub fn new(start_value: RotationRad, end_value: RotationRad, duration: Duration, easing_function: EasingFunction) -> Self {
         Self {
             start_value,
             end_value,
@@ -21,25 +23,11 @@ impl RotationAnimation {
         }
     }
 
-    pub fn calculate_shortest_delta(start: f64, end: f64) -> f64 {
-        let delta = end - start;
-        let delta_normalized = delta % 360.0;
-        if delta_normalized.abs() > 180.0 {
-            if delta_normalized > 0.0 {
-                delta_normalized - 360.0
-            } else {
-                delta_normalized + 360.0
-            }
-        } else {
-            delta_normalized
-        }
-    }
-
     pub fn start(&mut self) {
         self.start_time = Some(Instant::now());
     }
 
-    pub fn get_current_value(&self) -> Option<f64> {
+    pub fn get_current_value(&self) -> Option<RotationRad> {
         let start_time = self.start_time?;
         let elapsed = start_time.elapsed();
         let progress = elapsed.as_secs_f64() / self.duration.as_secs_f64();
@@ -48,11 +36,11 @@ impl RotationAnimation {
             return Some(self.end_value);
         }
 
+        // Shortest-path interpolation between the two angles.
         let eased_progress = self.apply_easing(progress);
-        let delta = Self::calculate_shortest_delta(self.start_value, self.end_value);
-        let current_rotation = self.start_value + delta * eased_progress;
-        // Normalize to 0-360 range
-        Some(current_rotation.rem_euclid(360.0))
+        let current = RotationRad::ema(self.start_value, self.end_value, SmoothingAlpha::new(eased_progress));
+        // Normalize to the 0-2π range
+        Some(current.normalized())
     }
 
     pub fn is_complete(&self) -> bool {
@@ -93,32 +81,48 @@ mod tests {
 
     #[test]
     fn test_animation_linear() {
-        let mut animation = RotationAnimation::new(0.0, 100.0, Duration::from_millis(100), EasingFunction::Linear);
+        let mut animation = RotationAnimation::new(
+            RotationRad::from_degrees(0.0),
+            RotationRad::from_degrees(100.0),
+            Duration::from_millis(100),
+            EasingFunction::Linear,
+        );
         animation.start();
         std::thread::sleep(Duration::from_millis(50));
         let value = animation.get_current_value();
         assert!(value.is_some());
-        assert!(value.unwrap() > 40.0 && value.unwrap() < 60.0);
+        let degrees = value.unwrap().to_degrees();
+        assert!(degrees > 40.0 && degrees < 60.0);
     }
 
     #[test]
     fn test_animation_complete() {
-        let mut animation = RotationAnimation::new(0.0, 100.0, Duration::from_millis(10), EasingFunction::Linear);
+        let mut animation = RotationAnimation::new(
+            RotationRad::from_degrees(0.0),
+            RotationRad::from_degrees(100.0),
+            Duration::from_millis(10),
+            EasingFunction::Linear,
+        );
         animation.start();
         std::thread::sleep(Duration::from_millis(20));
         assert!(animation.is_complete());
-        assert_eq!(animation.get_current_value(), Some(100.0));
+        assert_eq!(animation.get_current_value(), Some(RotationRad::from_degrees(100.0)));
     }
 
     #[test]
     fn test_animation_overshoot() {
-        let mut animation = RotationAnimation::new(0.0, 100.0, Duration::from_millis(100), EasingFunction::Overshoot { overshoot_amount: 1.7 });
+        let mut animation = RotationAnimation::new(
+            RotationRad::from_degrees(0.0),
+            RotationRad::from_degrees(100.0),
+            Duration::from_millis(100),
+            EasingFunction::Overshoot { overshoot_amount: 1.7 },
+        );
         animation.start();
         std::thread::sleep(Duration::from_millis(50));
         let value = animation.get_current_value();
         assert!(value.is_some());
         // Overshoot should go beyond the target temporarily
         let mid_value = value.unwrap();
-        assert!(mid_value > 40.0);
+        assert!(mid_value.to_degrees() > 40.0);
     }
 }

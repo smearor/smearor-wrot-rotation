@@ -281,8 +281,8 @@ impl ObjectImpl for RotationWidgetImpl {
             let animation_speed_ms = widget_clone.imp().animation_speed.get();
             let overshoot_amount = widget_clone.imp().animation_overshoot.get();
             let mut animation = RotationZoomAnimation::new(
-                current_rotation as f64,
-                final_rotation as f64,
+                RotationRad::from_degrees(current_rotation as f64),
+                RotationRad::from_degrees(final_rotation as f64),
                 1.0,
                 0.8,
                 1.0,
@@ -296,7 +296,7 @@ impl ObjectImpl for RotationWidgetImpl {
             widget_clone.add_tick_callback(move |widget, _frame_clock| {
                 let imp = widget.imp();
                 if let Some(ref mut anim) = *imp.rotation_zoom_animation.borrow_mut() {
-                    let Some((current_rotation, current_scale)) = anim.get_current_values_with_phases() else {
+                    let Some(values) = anim.get_current_values_with_phases() else {
                         return ControlFlow::Break;
                     };
                     let Some(layout) = widget.layout_manager() else {
@@ -307,10 +307,10 @@ impl ObjectImpl for RotationWidgetImpl {
                     };
 
                     // Apply rotation
-                    layout.imp().rotation.set(current_rotation as f32);
+                    layout.imp().rotation.set(values.rotation.to_degrees() as f32);
 
                     // Apply scale using transform matrix instead of CSS
-                    layout.imp().scale.set(current_scale as f32);
+                    layout.imp().scale.set(values.scale as f32);
 
                     widget.queue_allocate();
 

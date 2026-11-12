@@ -193,8 +193,8 @@ impl RotationWidget {
         // 33-66%: Rotation without zoom (scale 0.9 -> 0.9)
         // 66-100%: Rotation and zoom in (scale 0.9 -> 1.0)
         let mut animation = RotationZoomAnimation::new(
-            current_rotation as f64,
-            new_rotation.to_degrees(),
+            RotationRad::from_degrees(current_rotation as f64),
+            new_rotation,
             1.0,
             0.8,
             1.0,
@@ -207,9 +207,8 @@ impl RotationWidget {
         self.add_tick_callback(move |widget, _frame_clock| {
             let imp = widget.imp();
             if let Some(ref mut anim) = *imp.rotation_zoom_animation.borrow_mut() {
-                let (current_rotation, current_scale): (f64, f64) = match anim.get_current_values_with_phases() {
-                    Some(values) => values,
-                    None => return glib::ControlFlow::Break,
+                let Some(values) = anim.get_current_values_with_phases() else {
+                    return glib::ControlFlow::Break;
                 };
 
                 let layout = match widget.layout_manager() {
@@ -223,10 +222,10 @@ impl RotationWidget {
                 };
 
                 // Apply rotation
-                layout.imp().rotation.set(current_rotation as f32);
+                layout.imp().rotation.set(values.rotation.to_degrees() as f32);
 
                 // Apply scale using transform matrix instead of CSS
-                layout.imp().scale.set(current_scale as f32);
+                layout.imp().scale.set(values.scale as f32);
 
                 widget.queue_allocate();
 

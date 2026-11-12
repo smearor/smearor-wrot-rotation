@@ -1,12 +1,23 @@
 use crate::animation::functions::easing::EasingFunction;
-use crate::animation::rotation::RotationAnimation;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::SmoothingAlpha;
 use std::time::Duration;
 use std::time::Instant;
 use tracing::debug;
 
+/// The animation's current output: the eased rotation on the shortest
+/// path between start and end angle plus the eased zoom factor.
+#[derive(Debug, Clone, Copy)]
+pub struct AnimationValues {
+    /// Current rotation.
+    pub rotation: RotationRad,
+    /// Current zoom factor.
+    pub scale: f64,
+}
+
 pub struct RotationZoomAnimation {
-    start_rotation: f64,
-    end_rotation: f64,
+    start_rotation: RotationRad,
+    end_rotation: RotationRad,
     start_scale: f64,
     mid_scale: f64,
     end_scale: f64,
@@ -17,8 +28,8 @@ pub struct RotationZoomAnimation {
 
 impl RotationZoomAnimation {
     pub fn new(
-        start_rotation: f64,
-        end_rotation: f64,
+        start_rotation: RotationRad,
+        end_rotation: RotationRad,
         start_scale: f64,
         mid_scale: f64,
         end_scale: f64,
@@ -41,41 +52,50 @@ impl RotationZoomAnimation {
         self.start_time = Some(Instant::now());
     }
 
-    pub fn get_current_values(&self) -> Option<(f64, f64)> {
+    pub fn get_current_values(&self) -> Option<AnimationValues> {
         let start_time = self.start_time?;
         let elapsed = start_time.elapsed();
         let progress = elapsed.as_secs_f64() / self.duration.as_secs_f64();
 
         if progress >= 1.0 {
-            return Some((self.end_rotation, self.end_scale));
+            return Some(AnimationValues {
+                rotation: self.end_rotation,
+                scale: self.end_scale,
+            });
         }
 
         let eased_progress = self.apply_easing(progress);
-        let delta = RotationAnimation::calculate_shortest_delta(self.start_rotation, self.end_rotation);
-        let current_rotation = self.start_rotation + delta * eased_progress;
-        // Normalize to 0-360 range
-        let current_rotation = current_rotation.rem_euclid(360.0);
+        let current = RotationRad::ema(self.start_rotation, self.end_rotation, SmoothingAlpha::new(eased_progress));
+        // Normalize to the 0-2π range
+        let current_rotation = current.normalized();
         let current_scale = self.start_scale + (self.end_scale - self.start_scale) * eased_progress;
-        Some((current_rotation, current_scale))
+        Some(AnimationValues {
+            rotation: current_rotation,
+            scale: current_scale,
+        })
     }
 
-    pub fn get_current_values_with_phases(&self) -> Option<(f64, f64)> {
+    pub fn get_current_values_with_phases(&self) -> Option<AnimationValues> {
         let start_time = self.start_time?;
         let elapsed = start_time.elapsed();
         let progress = elapsed.as_secs_f64() / self.duration.as_secs_f64();
 
         if progress >= 1.0 {
-            return Some((self.end_rotation, self.end_scale));
+            return Some(AnimationValues {
+                rotation: self.end_rotation,
+                scale: self.end_scale,
+            });
         }
 
         let eased_progress = self.apply_easing(progress);
-        let delta = RotationAnimation::calculate_shortest_delta(self.start_rotation, self.end_rotation);
-        let current_rotation = self.start_rotation + delta * eased_progress;
-        // Normalize to 0-360 range
-        let current_rotation = current_rotation.rem_euclid(360.0);
+        let current = RotationRad::ema(self.start_rotation, self.end_rotation, SmoothingAlpha::new(eased_progress));
+        // Normalize to the 0-2π range
+        let current_rotation = current.normalized();
         debug!(
-            "start_rotation {} current_rotation {current_rotation} end_rotation {} delta {delta} eased_progress {eased_progress}",
-            self.start_rotation, self.end_rotation
+            "start_rotation {} current_rotation {:?} end_rotation {} eased_progress {eased_progress}",
+            self.start_rotation.to_degrees(),
+            current_rotation.to_degrees(),
+            self.end_rotation.to_degrees()
         );
 
         // Three-phase zoom:
@@ -96,7 +116,10 @@ impl RotationZoomAnimation {
             self.mid_scale + (mid_scale_rev * phase_progress)
         };
 
-        Some((current_rotation, current_scale))
+        Some(AnimationValues {
+            rotation: current_rotation,
+            scale: current_scale,
+        })
     }
 
     pub fn is_complete(&self) -> bool {
@@ -137,11 +160,20 @@ mod tests {
 
     #[test]
     fn test_rotation_zoom_animation() {
-        let mut animation = RotationZoomAnimation::new(0.0, 90.0, 1.0, 0.8, 1.2, Duration::from_millis(100), EasingFunction::Linear);
+        let mut animation = RotationZoomAnimation::new(
+            RotationRad::from_degrees(0.0),
+            RotationRad::from_degrees(90.0),
+            1.0,
+            0.8,
+            1.2,
+            Duration::from_millis(100),
+            EasingFunction::Linear,
+        );
         animation.start();
         std::thread::sleep(Duration::from_millis(50));
-        let (rotation, scale) = animation.get_current_values().unwrap();
-        assert!(rotation > 40.0 && rotation < 50.0);
-        assert!(scale > 1.08 && scale < 1.12);
+        let values = animation.get_current_values().unwrap();
+        let degrees = values.rotation.to_degrees();
+        assert!(degrees > 40.0 && degrees < 50.0);
+        assert!(values.scale > 1.08 && values.scale < 1.12);
     }
 }
