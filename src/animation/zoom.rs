@@ -1,5 +1,6 @@
 use crate::animation::functions::easing::EasingFunction;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::ScaleFactor;
 use smearor_commons_geometry::SmoothingAlpha;
 use std::time::Duration;
 use std::time::Instant;
@@ -12,15 +13,15 @@ pub struct AnimationValues {
     /// Current rotation.
     pub rotation: RotationRad,
     /// Current zoom factor.
-    pub scale: f64,
+    pub scale: ScaleFactor,
 }
 
 pub struct RotationZoomAnimation {
     start_rotation: RotationRad,
     end_rotation: RotationRad,
-    start_scale: f64,
-    mid_scale: f64,
-    end_scale: f64,
+    start_scale: ScaleFactor,
+    mid_scale: ScaleFactor,
+    end_scale: ScaleFactor,
     duration: Duration,
     easing_function: EasingFunction,
     start_time: Option<Instant>,
@@ -30,9 +31,9 @@ impl RotationZoomAnimation {
     pub fn new(
         start_rotation: RotationRad,
         end_rotation: RotationRad,
-        start_scale: f64,
-        mid_scale: f64,
-        end_scale: f64,
+        start_scale: ScaleFactor,
+        mid_scale: ScaleFactor,
+        end_scale: ScaleFactor,
         duration: Duration,
         easing_function: EasingFunction,
     ) -> Self {
@@ -68,7 +69,7 @@ impl RotationZoomAnimation {
         let current = RotationRad::ema(self.start_rotation, self.end_rotation, SmoothingAlpha::new(eased_progress));
         // Normalize to the 0-2π range
         let current_rotation = current.normalized();
-        let current_scale = self.start_scale + (self.end_scale - self.start_scale) * eased_progress;
+        let current_scale = ScaleFactor::lerp(self.start_scale, self.end_scale, eased_progress);
         Some(AnimationValues {
             rotation: current_rotation,
             scale: current_scale,
@@ -102,18 +103,18 @@ impl RotationZoomAnimation {
         // 0-33%: Zoom out (1.0 -> 0.9)
         // 33-66%: No zoom (0.9 -> 0.9)
         // 66-100%: Zoom in (0.9 -> 1.0)
-        let mid_scale_rev = 0.1 * self.mid_scale;
+        let mid_scale_rev = 0.1 * self.mid_scale.as_f64();
         let current_scale = if progress < 0.33 {
             // Phase 1: Zoom out
             let phase_progress = progress / 0.33;
-            1.0 - (mid_scale_rev * phase_progress)
+            ScaleFactor::new(1.0 - (mid_scale_rev * phase_progress))
         } else if progress < 0.66 {
             // Phase 2: No zoom
             self.mid_scale
         } else {
             // Phase 3: Zoom in
             let phase_progress = (progress - 0.66) / 0.34;
-            self.mid_scale + (mid_scale_rev * phase_progress)
+            ScaleFactor::new(self.mid_scale.as_f64() + (mid_scale_rev * phase_progress))
         };
 
         Some(AnimationValues {
@@ -163,9 +164,9 @@ mod tests {
         let mut animation = RotationZoomAnimation::new(
             RotationRad::from_degrees(0.0),
             RotationRad::from_degrees(90.0),
-            1.0,
-            0.8,
-            1.2,
+            ScaleFactor::ONE,
+            ScaleFactor::new(0.8),
+            ScaleFactor::new(1.2),
             Duration::from_millis(100),
             EasingFunction::Linear,
         );
@@ -174,6 +175,7 @@ mod tests {
         let values = animation.get_current_values().unwrap();
         let degrees = values.rotation.to_degrees();
         assert!(degrees > 40.0 && degrees < 50.0);
-        assert!(values.scale > 1.08 && values.scale < 1.12);
+        let scale = values.scale.as_f64();
+        assert!(scale > 1.08 && scale < 1.12);
     }
 }

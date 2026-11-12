@@ -13,6 +13,7 @@ use gtk4::prelude::*;
 use gtk4::subclass::prelude::*;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::ScaleFactor;
 use smearor_commons_geometry::Vec2;
 use std::time::Duration;
 use tracing::error;
@@ -195,9 +196,9 @@ impl RotationWidget {
         let mut animation = RotationZoomAnimation::new(
             RotationRad::from_degrees(current_rotation as f64),
             new_rotation,
-            1.0,
-            0.8,
-            1.0,
+            ScaleFactor::ONE,
+            ScaleFactor::new(0.8),
+            ScaleFactor::ONE,
             Duration::from_millis(animation_speed_ms),
             EasingFunction::EaseInOut,
         );
@@ -225,7 +226,7 @@ impl RotationWidget {
                 layout.imp().rotation.set(values.rotation.to_degrees() as f32);
 
                 // Apply scale using transform matrix instead of CSS
-                layout.imp().scale.set(values.scale as f32);
+                layout.imp().scale.set(values.scale.as_f64() as f32);
 
                 widget.queue_allocate();
 

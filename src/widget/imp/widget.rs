@@ -24,6 +24,7 @@ use gtk4::subclass::prelude::WidgetImplExt;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::ScaleFactor;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -283,9 +284,9 @@ impl ObjectImpl for RotationWidgetImpl {
             let mut animation = RotationZoomAnimation::new(
                 RotationRad::from_degrees(current_rotation as f64),
                 RotationRad::from_degrees(final_rotation as f64),
-                1.0,
-                0.8,
-                1.0,
+                ScaleFactor::ONE,
+                ScaleFactor::new(0.8),
+                ScaleFactor::ONE,
                 Duration::from_millis(animation_speed_ms),
                 EasingFunction::Overshoot { overshoot_amount },
             );
@@ -310,7 +311,7 @@ impl ObjectImpl for RotationWidgetImpl {
                     layout.imp().rotation.set(values.rotation.to_degrees() as f32);
 
                     // Apply scale using transform matrix instead of CSS
-                    layout.imp().scale.set(values.scale as f32);
+                    layout.imp().scale.set(values.scale.as_f64() as f32);
 
                     widget.queue_allocate();
 
