@@ -67,6 +67,14 @@ impl From<SmearorRotation> for RotationRad {
     }
 }
 
+/// A continuous angle as the quantized rotation enum (`Deg0`..`Deg270`
+/// for the cardinal values, `Deg` otherwise).
+impl From<RotationRad> for SmearorRotation {
+    fn from(rotation: RotationRad) -> Self {
+        Self::new(rotation.to_degrees() as f32)
+    }
+}
+
 impl From<&str> for SmearorRotation {
     fn from(s: &str) -> Self {
         match s.to_lowercase().as_str() {
