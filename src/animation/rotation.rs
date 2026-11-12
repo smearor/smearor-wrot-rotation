@@ -4,6 +4,8 @@ use smearor_commons_geometry::SmoothingAlpha;
 use std::time::Duration;
 use std::time::Instant;
 
+/// Eased rotation animation between two angles, always taking the
+/// shortest arc across the 2π wrap.
 pub struct RotationAnimation {
     start_value: RotationRad,
     end_value: RotationRad,
@@ -13,6 +15,9 @@ pub struct RotationAnimation {
 }
 
 impl RotationAnimation {
+    /// Creates an animation from `start_value` to `end_value` over
+    /// `duration` following the `easing_function` curve. Call
+    /// [`Self::start`] to begin.
     pub fn new(start_value: RotationRad, end_value: RotationRad, duration: Duration, easing_function: EasingFunction) -> Self {
         Self {
             start_value,
@@ -23,10 +28,13 @@ impl RotationAnimation {
         }
     }
 
+    /// Starts the animation clock.
     pub fn start(&mut self) {
         self.start_time = Some(Instant::now());
     }
 
+    /// The eased rotation at the current point in time, normalized
+    /// to `[0, 2π)` - `None` before [`Self::start`].
     pub fn get_current_value(&self) -> Option<RotationRad> {
         let start_time = self.start_time?;
         let elapsed = start_time.elapsed();
@@ -43,6 +51,7 @@ impl RotationAnimation {
         Some(current.normalized())
     }
 
+    /// Whether the animation duration has elapsed since [`Self::start`].
     pub fn is_complete(&self) -> bool {
         if let Some(start_time) = self.start_time {
             start_time.elapsed() >= self.duration

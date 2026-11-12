@@ -16,6 +16,8 @@ pub struct AnimationValues {
     pub scale: ScaleFactor,
 }
 
+/// Combined rotation and zoom animation: eases the rotation on the
+/// shortest arc while modulating a three-phase zoom factor.
 pub struct RotationZoomAnimation {
     start_rotation: RotationRad,
     end_rotation: RotationRad,
@@ -28,6 +30,9 @@ pub struct RotationZoomAnimation {
 }
 
 impl RotationZoomAnimation {
+    /// Creates an animation from `start_rotation`/`start_scale` to
+    /// `end_rotation`/`end_scale` with `mid_scale` as the
+    /// three-phase plateau. Call [`Self::start`] to begin.
     pub fn new(
         start_rotation: RotationRad,
         end_rotation: RotationRad,
@@ -49,10 +54,13 @@ impl RotationZoomAnimation {
         }
     }
 
+    /// Starts the animation clock.
     pub fn start(&mut self) {
         self.start_time = Some(Instant::now());
     }
 
+    /// The eased rotation and a plain lerped scale at the current
+    /// point in time - `None` before [`Self::start`].
     pub fn get_current_values(&self) -> Option<AnimationValues> {
         let start_time = self.start_time?;
         let elapsed = start_time.elapsed();
@@ -76,6 +84,8 @@ impl RotationZoomAnimation {
         })
     }
 
+    /// The eased rotation plus the three-phase zoom (zoom out,
+    /// hold `mid_scale`, zoom back in) - `None` before [`Self::start`].
     pub fn get_current_values_with_phases(&self) -> Option<AnimationValues> {
         let start_time = self.start_time?;
         let elapsed = start_time.elapsed();
@@ -123,6 +133,7 @@ impl RotationZoomAnimation {
         })
     }
 
+    /// Whether the animation duration has elapsed since [`Self::start`].
     pub fn is_complete(&self) -> bool {
         if let Some(start_time) = self.start_time {
             start_time.elapsed() >= self.duration
