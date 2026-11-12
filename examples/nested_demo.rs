@@ -160,7 +160,7 @@ fn build_ui(application: &Application) {
     inner_controls_box.append(&inner_manual_scale);
 
     // Create the inner RotationWidget with gesture rotation disabled by default
-    let inner_rotation_widget = RotationWidget::new(SmearorRotation::Deg0)
+    let inner_rotation_widget = RotationWidget::new(SmearorRotation::DEG_0)
         .with_gesture_rotation_enabled(false)
         .with_animations_enabled(true);
     inner_rotation_widget.set_animation_speed(500);
@@ -232,7 +232,7 @@ fn build_ui(application: &Application) {
     outer_child_frame.set_child(Some(&outer_child_box));
 
     // Create the outer RotationWidget with gesture rotation enabled
-    let outer_rotation_widget = RotationWidget::new(SmearorRotation::Deg0)
+    let outer_rotation_widget = RotationWidget::new(SmearorRotation::DEG_0)
         .with_gesture_rotation_enabled(true)
         .with_animations_enabled(true);
     outer_rotation_widget.set_animation_speed(500);
@@ -439,7 +439,7 @@ fn build_ui(application: &Application) {
         outer_angle_label,
         move |scale| {
             let angle = scale.value();
-            outer_rotation_widget.set_rotation(SmearorRotation::Deg(angle as f32));
+            outer_rotation_widget.set_rotation(SmearorRotation::free(angle as f32));
             outer_angle_label.set_label(&format!("Outer Angle: {:.2}°", angle));
         }
     ));
@@ -451,7 +451,7 @@ fn build_ui(application: &Application) {
         inner_angle_label,
         move |scale| {
             let angle = scale.value();
-            inner_rotation_widget.set_rotation(SmearorRotation::Deg(angle as f32));
+            inner_rotation_widget.set_rotation(SmearorRotation::free(angle as f32));
             inner_angle_label.set_label(&format!("Inner Angle: {:.2}°", angle));
         }
     ));

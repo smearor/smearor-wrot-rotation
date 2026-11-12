@@ -115,7 +115,7 @@ fn build_ui(application: &Application) {
     main_box.append(&button_box);
 
     // Create the RotationWidget initially at 0 degrees
-    let rotation_widget = RotationWidget::new(SmearorRotation::Deg0);
+    let rotation_widget = RotationWidget::new(SmearorRotation::DEG_0);
     rotation_widget.set_animations_enabled(true);
     rotation_widget.set_animation_speed(500);
     rotation_widget.set_animation_overshoot(1.7);
@@ -298,7 +298,7 @@ fn build_ui(application: &Application) {
         current_angle_label,
         move |scale| {
             let angle = scale.value();
-            rotation_widget.set_rotation(SmearorRotation::Deg(angle as f32));
+            rotation_widget.set_rotation(SmearorRotation::free(angle as f32));
             current_angle_label.set_label(&format!("Current Angle: {:.2}°", angle));
         }
     ));
