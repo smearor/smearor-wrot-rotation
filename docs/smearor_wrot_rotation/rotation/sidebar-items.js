@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["SmearorRotation"]};
+window.SIDEBAR_ITEMS = {"struct":["SmearorRotation"]};
