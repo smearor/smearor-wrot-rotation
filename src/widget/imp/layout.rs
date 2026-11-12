@@ -70,15 +70,26 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
                     let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
                     (child_nat_w, child_nat_h)
                 } else {
+                    // `denom` is `cos(2θ)` and vanishes at 45° + k·90° - the
+                    // matrix singularity where no rotated child size can
+                    // reproduce a non-square allocation and the inverse
+                    // solve diverges. Blend quadratically from the solved
+                    // size at the band edge (`|denom| = 0.9`, continuous
+                    // with the pure solve outside) down to the square fit
+                    // at the singularity; a hard switch jumped the child
+                    // size whenever `|denom|` crossed the threshold.
                     let denom = abs_cos * abs_cos - abs_sin * abs_sin;
-                    if denom.abs() < 0.9 {
-                        // Special case 45°, 135° (matrix singularity) -> Child square fit
-                        let s = (width as f32 / (abs_cos + abs_sin)) as i32;
+                    let square_fit = width as f32 / (abs_cos + abs_sin);
+                    let blend = (denom.abs() / 0.9).min(1.0);
+                    let blend = blend * blend;
+                    if blend == 0.0 {
+                        let s = square_fit as i32;
                         (s, s)
                     } else {
-                        let w_c = (width as f32 * abs_cos - height as f32 * abs_sin) / denom;
-                        let h_c = (height as f32 * abs_cos - width as f32 * abs_sin) / denom;
-                        (w_c as i32, h_c as i32)
+                        let solved_w = (width as f32 * abs_cos - height as f32 * abs_sin) / denom;
+                        let solved_h = (height as f32 * abs_cos - width as f32 * abs_sin) / denom;
+                        let blended = |solved: f32| (square_fit + (solved.max(0.0) - square_fit) * blend) as i32;
+                        (blended(solved_w), blended(solved_h))
                     }
                 };
 
