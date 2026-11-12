@@ -11,7 +11,6 @@ use glib::subclass::prelude::ObjectImplExt;
 use glib::subclass::prelude::ObjectSubclass;
 use glib::subclass::prelude::ObjectSubclassExt;
 use glib::subclass::prelude::ObjectSubclassIsExt;
-use gtk4::Orientation;
 use gtk4::PropagationPhase;
 use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::GestureExt;
@@ -22,6 +21,9 @@ use gtk4::prelude::WidgetExtManual;
 use gtk4::subclass::prelude::WidgetClassExt;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::prelude::WidgetImplExt;
+use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::Rect;
+use smearor_commons_geometry::RotationRad;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -133,7 +135,7 @@ impl ObjectImpl for RotationWidgetImpl {
             }
 
             // 1. Convert to degrees (0.0 to 360.0)
-            let current_angle = angle_delta.to_degrees() as f32;
+            let current_angle = RotationRad::new(angle_delta).to_degrees() as f32;
 
             // 2. Calculate the real delta
             // We need the difference between the current angle and the last angle
@@ -370,16 +372,14 @@ impl WidgetImpl for RotationWidgetImpl {
         let widget = self.obj();
         if let Some(native) = widget.native()
             && let Some(surface) = native.surface()
-            && let Some(child) = widget.first_child()
         {
             let angle = widget
                 .layout_manager()
                 .and_then(|lm| lm.downcast::<RotatedLayout>().ok())
                 .map(|rl| rl.imp().rotation.get())
                 .unwrap_or(0.0);
-            let (_, child_w, _, _) = child.measure(Orientation::Horizontal, -1);
-            let (_, child_h, _, _) = child.measure(Orientation::Vertical, -1);
-            let region = self.calculate_rotated_region_with_scale(width as f32, height as f32, child_w as f32, child_h as f32, angle);
+            let region =
+                self.calculate_rotated_region(Rect::<Pixels>::from_xywh(0.0, 0.0, width as f64, height as f64), RotationRad::from_degrees(angle as f64));
             // `set_input_region` expects surface coordinates; the computed
             // region is widget-space (0..w x 0..h) - translate by the
             // widget's origin inside the native. Only exact when ancestor

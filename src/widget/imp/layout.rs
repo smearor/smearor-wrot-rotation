@@ -9,6 +9,9 @@ use gtk4::gsk::Transform;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::layout_manager::LayoutManagerImpl;
 use gtk4::subclass::prelude::DerivedObjectProperties;
+use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::Rect;
+use smearor_commons_geometry::RotationRad;
 use std::cell::Cell;
 use tracing::debug;
 use tracing::trace;
@@ -69,8 +72,7 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
                 } else {
                     let denom = abs_cos * abs_cos - abs_sin * abs_sin;
                     if denom.abs() < 0.9 {
-                        // Sonderfall 45°, 135° etc. (Matrix singulär)
-                        // Hier vereinfacht: Kind quadratisch einpassen
+                        // Special case 45°, 135° (matrix singularity) -> Child square fit
                         let s = (width as f32 / (abs_cos + abs_sin)) as i32;
                         (s, s)
                     } else {
@@ -94,26 +96,20 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
     }
 
     fn measure(&self, widget: &gtk4::Widget, orientation: Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
-        let angle_deg = self.rotation.get();
-        let angle_rad = angle_deg.to_radians();
-        let abs_cos = angle_rad.cos().abs();
-        let abs_sin = angle_rad.sin().abs();
+        let rotation = RotationRad::from_degrees(self.rotation.get() as f64);
 
         if let Some(child) = widget.first_child() {
             let (child_min_w, child_nat_w, _, _) = child.measure(Orientation::Horizontal, -1);
             let (child_min_h, child_nat_h, _, _) = child.measure(Orientation::Vertical, -1);
             trace!("child_min_w {child_min_w} child_nat_w {child_nat_w} child_min_h {child_min_h} child_nat_h {child_nat_h}");
 
+            // Rotated bounding box of the child's natural and minimum size.
+            let min = Rect::<Pixels>::from_xywh(0.0, 0.0, child_min_w as f64, child_min_h as f64).rotated_bounds(rotation);
+            let nat = Rect::<Pixels>::from_xywh(0.0, 0.0, child_nat_w as f64, child_nat_h as f64).rotated_bounds(rotation);
             if orientation == Orientation::Horizontal {
-                // Calculate bounding box width
-                let min = (child_min_w as f32 * abs_cos + child_min_h as f32 * abs_sin).ceil() as i32;
-                let nat = (child_nat_w as f32 * abs_cos + child_nat_h as f32 * abs_sin).ceil() as i32;
-                (min, nat, -1, -1)
+                (min.x.ceil() as i32, nat.x.ceil() as i32, -1, -1)
             } else {
-                // Calculate bounding box height
-                let min = (child_min_w as f32 * abs_sin + child_min_h as f32 * abs_cos).ceil() as i32;
-                let nat = (child_nat_w as f32 * abs_sin + child_nat_h as f32 * abs_cos).ceil() as i32;
-                (min, nat, -1, -1)
+                (min.y.ceil() as i32, nat.y.ceil() as i32, -1, -1)
             }
         } else {
             debug!("No child");

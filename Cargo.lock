@@ -637,14 +637,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 
 [[package]]
+name = "smearor-commons-geometry"
+version = "0.1.0"
+source = "git+https://github.com/smearor/smearor-commons.git#1982d426d1276816a23c6558d1dfb61af21d6c06"
+dependencies = [
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "smearor-wrot-rotation"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "glib",
  "gtk4",
  "gtk4-layer-shell",
  "miette",
  "serde",
+ "smearor-commons-geometry",
  "tracing",
 ]
 
@@ -701,6 +711,26 @@ name = "target-lexicon"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
+
+[[package]]
+name = "thiserror"
+version = "2.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.10",
+]
 
 [[package]]
 name = "toml"

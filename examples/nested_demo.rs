@@ -16,6 +16,7 @@ use gtk4::Orientation;
 use gtk4::Scale;
 use gtk4::Switch;
 use gtk4::prelude::*;
+use smearor_commons_geometry::RotationRad;
 use smearor_wrot_rotation::RotationControlHandler;
 use smearor_wrot_rotation::RotationWidget;
 use smearor_wrot_rotation::SmearorRotation;
@@ -325,7 +326,7 @@ fn build_ui(application: &Application) {
         #[weak]
         outer_angle_label,
         move |_| {
-            outer_rotation_widget.set_rotation_with_animation(0.0);
+            outer_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(0.0));
             outer_manual_scale.set_value(0.0);
             outer_angle_label.set_label("Outer Angle: 0.00°");
         }
@@ -339,7 +340,7 @@ fn build_ui(application: &Application) {
         #[weak]
         outer_angle_label,
         move |_| {
-            outer_rotation_widget.set_rotation_with_animation(90.0);
+            outer_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(90.0));
             outer_manual_scale.set_value(90.0);
             outer_angle_label.set_label("Outer Angle: 90.00°");
         }
@@ -353,7 +354,7 @@ fn build_ui(application: &Application) {
         #[weak]
         outer_angle_label,
         move |_| {
-            outer_rotation_widget.set_rotation_with_animation(180.0);
+            outer_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(180.0));
             outer_manual_scale.set_value(180.0);
             outer_angle_label.set_label("Outer Angle: 180.00°");
         }
@@ -367,7 +368,7 @@ fn build_ui(application: &Application) {
         #[weak]
         outer_angle_label,
         move |_| {
-            outer_rotation_widget.set_rotation_with_animation(270.0);
+            outer_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(270.0));
             outer_manual_scale.set_value(270.0);
             outer_angle_label.set_label("Outer Angle: 270.00°");
         }
@@ -382,7 +383,7 @@ fn build_ui(application: &Application) {
         #[weak]
         inner_angle_label,
         move |_| {
-            inner_rotation_widget.set_rotation_with_animation(0.0);
+            inner_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(0.0));
             inner_manual_scale.set_value(0.0);
             inner_angle_label.set_label("Inner Angle: 0.00°");
         }
@@ -396,7 +397,7 @@ fn build_ui(application: &Application) {
         #[weak]
         inner_angle_label,
         move |_| {
-            inner_rotation_widget.set_rotation_with_animation(90.0);
+            inner_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(90.0));
             inner_manual_scale.set_value(90.0);
             inner_angle_label.set_label("Inner Angle: 90.00°");
         }
@@ -410,7 +411,7 @@ fn build_ui(application: &Application) {
         #[weak]
         inner_angle_label,
         move |_| {
-            inner_rotation_widget.set_rotation_with_animation(180.0);
+            inner_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(180.0));
             inner_manual_scale.set_value(180.0);
             inner_angle_label.set_label("Inner Angle: 180.00°");
         }
@@ -424,7 +425,7 @@ fn build_ui(application: &Application) {
         #[weak]
         inner_angle_label,
         move |_| {
-            inner_rotation_widget.set_rotation_with_animation(270.0);
+            inner_rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(270.0));
             inner_manual_scale.set_value(270.0);
             inner_angle_label.set_label("Inner Angle: 270.00°");
         }

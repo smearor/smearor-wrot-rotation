@@ -11,6 +11,9 @@ use gtk4::PropagationPhase;
 use gtk4::Widget;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::*;
+use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::Vec2;
 use std::time::Duration;
 use tracing::error;
 
@@ -40,32 +43,15 @@ impl RotationWidget {
     }
 
     /// Transform input coordinates based on current rotation
-    pub fn input_transform(&self, x: f64, y: f64) -> (f64, f64) {
+    pub fn input_transform(&self, point: Vec2<Pixels>) -> Vec2<Pixels> {
         let rotation = self.rotation();
-        if rotation == 0.0 {
-            (x, y)
+        if rotation.is_zero() {
+            point
         } else {
-            // Get widget dimensions
-            let width = self.width() as f64;
-            let height = self.height() as f64;
-
-            // Translate to center
-            let cx = width / 2.0;
-            let cy = height / 2.0;
-
-            let dx = x - cx;
-            let dy = y - cy;
-
-            // Rotate in reverse direction to compensate for widget rotation
-            let radians = (-rotation).to_radians() as f64;
-            let cos = radians.cos();
-            let sin = radians.sin();
-
-            let rotated_x = dx * cos - dy * sin;
-            let rotated_y = dx * sin + dy * cos;
-
-            // Translate back
-            (rotated_x + cx, rotated_y + cy)
+            // Rotate around the center in reverse direction to
+            // compensate for the widget rotation.
+            let center = Vec2::<Pixels>::new(self.width() as f64 / 2.0, self.height() as f64 / 2.0);
+            (point - center).rotated(-rotation) + center
         }
     }
 
@@ -156,7 +142,7 @@ impl RotationWidget {
         self.imp().animation_overshoot.set(overshoot);
     }
 
-    pub fn set_rotation_with_animation(&self, new_rotation: f64) {
+    pub fn set_rotation_with_animation(&self, new_rotation: RotationRad) {
         let imp = self.imp();
 
         // Check if animations are disabled
@@ -178,7 +164,7 @@ impl RotationWidget {
                 }
             };
 
-            layout.imp().rotation.set(new_rotation as f32);
+            layout.imp().rotation.set(new_rotation.to_degrees() as f32);
             self.queue_allocate();
             return;
         }
@@ -208,7 +194,7 @@ impl RotationWidget {
         // 66-100%: Rotation and zoom in (scale 0.9 -> 1.0)
         let mut animation = RotationZoomAnimation::new(
             current_rotation as f64,
-            new_rotation,
+            new_rotation.to_degrees(),
             1.0,
             0.8,
             1.0,

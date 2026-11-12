@@ -4,6 +4,7 @@ use crate::widget::layout::RotatedLayout;
 use glib::object::Cast;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::prelude::WidgetExt;
+use smearor_commons_geometry::RotationRad;
 use tracing::error;
 
 pub trait RotationControlHandler {
@@ -11,7 +12,7 @@ pub trait RotationControlHandler {
     fn set_rotation(&self, rotation: SmearorRotation);
 
     /// Returns the current rotation in degrees
-    fn rotation(&self) -> f32;
+    fn rotation(&self) -> RotationRad;
 }
 
 impl RotationControlHandler for RotationWidget {
@@ -28,15 +29,15 @@ impl RotationControlHandler for RotationWidget {
         self.queue_allocate();
     }
 
-    fn rotation(&self) -> f32 {
+    fn rotation(&self) -> RotationRad {
         let Some(layout_manager) = self.layout_manager() else {
             error!("Failed to get layout manager in rotation");
-            return 0.0;
+            return RotationRad::new(0.0);
         };
         let Ok(rotated_layout) = layout_manager.downcast::<RotatedLayout>() else {
             error!("Layout manager is not RotatedLayout in rotation");
-            return 0.0;
+            return RotationRad::new(0.0);
         };
-        rotated_layout.imp().rotation.get()
+        RotationRad::from_degrees(rotated_layout.imp().rotation.get() as f64)
     }
 }

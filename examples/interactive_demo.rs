@@ -14,6 +14,7 @@ use gtk4::Orientation;
 use gtk4::Scale;
 use gtk4::Switch;
 use gtk4::prelude::*;
+use smearor_commons_geometry::RotationRad;
 use smearor_wrot_rotation::RotationControlHandler;
 use smearor_wrot_rotation::RotationWidget;
 use smearor_wrot_rotation::SmearorRotation;
@@ -241,7 +242,7 @@ fn build_ui(application: &Application) {
         #[weak]
         current_angle_label,
         move |_| {
-            rotation_widget.set_rotation_with_animation(0.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(0.0));
             manual_scale.set_value(0.0);
             current_angle_label.set_label("Current Angle: 0.00°");
         }
@@ -255,7 +256,7 @@ fn build_ui(application: &Application) {
         #[weak]
         current_angle_label,
         move |_| {
-            rotation_widget.set_rotation_with_animation(90.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(90.0));
             manual_scale.set_value(90.0);
             current_angle_label.set_label("Current Angle: 90.00°");
         }
@@ -269,7 +270,7 @@ fn build_ui(application: &Application) {
         #[weak]
         current_angle_label,
         move |_| {
-            rotation_widget.set_rotation_with_animation(180.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(180.0));
             manual_scale.set_value(180.0);
             current_angle_label.set_label("Current Angle: 180.00°");
         }
@@ -283,7 +284,7 @@ fn build_ui(application: &Application) {
         #[weak]
         current_angle_label,
         move |_| {
-            rotation_widget.set_rotation_with_animation(270.0);
+            rotation_widget.set_rotation_with_animation(RotationRad::from_degrees(270.0));
             manual_scale.set_value(270.0);
             current_angle_label.set_label("Current Angle: 270.00°");
         }

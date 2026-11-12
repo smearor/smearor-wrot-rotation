@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use serde::Serialize;
+use smearor_commons_geometry::RotationRad;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 #[serde(untagged)]
@@ -56,6 +57,13 @@ impl SmearorRotation {
             Self::Deg270 => Edge::Right,
             Self::Deg(_) => return None,
         })
+    }
+}
+
+/// The rotation as a [`RotationRad`] for geometry math.
+impl From<SmearorRotation> for RotationRad {
+    fn from(rotation: SmearorRotation) -> Self {
+        RotationRad::from_degrees(rotation.to_degrees() as f64)
     }
 }
 
