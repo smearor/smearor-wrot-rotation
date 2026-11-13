@@ -194,7 +194,7 @@ impl RotationWidget {
         // 33-66%: Rotation without zoom (scale 0.9 -> 0.9)
         // 66-100%: Rotation and zoom in (scale 0.9 -> 1.0)
         let mut animation = RotationZoomAnimation::new(
-            RotationRad::from_degrees(current_rotation),
+            current_rotation,
             new_rotation,
             ScaleFactor::ONE,
             ScaleFactor::new(0.8),
