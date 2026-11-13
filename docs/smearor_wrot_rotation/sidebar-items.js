@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["layer","rotation","widget"]};
+window.SIDEBAR_ITEMS = {"mod":["animation_kind","layer","rotation","widget"]};

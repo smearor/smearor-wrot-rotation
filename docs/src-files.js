@@ -1,2 +1,2 @@
-createSrcSidebar('[["smearor_wrot_rotation",["",[["widget",[["imp",[],["layout.rs","mod.rs","widget.rs"]]],["layout.rs","mod.rs","rotation.rs","widget.rs"]]],["layer.rs","lib.rs","rotation.rs"]]]]');
-//{"start":19,"fragment_lengths":[176]}
+createSrcSidebar('[["smearor_wrot_rotation",["",[["widget",[["imp",[],["layout.rs","mod.rs","widget.rs"]]],["layout.rs","mod.rs","rotation.rs","widget.rs"]]],["animation_kind.rs","layer.rs","lib.rs","rotation.rs"]]]]');
+//{"start":19,"fragment_lengths":[196]}
