@@ -38,6 +38,6 @@ impl RotationControlHandler for RotationWidget {
             error!("Layout manager is not RotatedLayout in rotation");
             return RotationRad::new(0.0);
         };
-        RotationRad::from_degrees(rotated_layout.imp().rotation.get() as f64)
+        RotationRad::from_degrees(rotated_layout.imp().rotation.get())
     }
 }

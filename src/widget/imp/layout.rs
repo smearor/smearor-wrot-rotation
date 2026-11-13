@@ -107,7 +107,7 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
     }
 
     fn measure(&self, widget: &gtk4::Widget, orientation: Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
-        let rotation = RotationRad::from_degrees(self.rotation.get() as f64);
+        let rotation = RotationRad::from_degrees(self.rotation.get());
 
         if let Some(child) = widget.first_child() {
             let (child_min_w, child_nat_w, _, _) = child.measure(Orientation::Horizontal, -1);
@@ -118,9 +118,9 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
             let min = Rect::<Pixels>::from_xywh(0.0, 0.0, child_min_w as f64, child_min_h as f64).rotated_bounds(rotation);
             let nat = Rect::<Pixels>::from_xywh(0.0, 0.0, child_nat_w as f64, child_nat_h as f64).rotated_bounds(rotation);
             if orientation == Orientation::Horizontal {
-                (min.x.ceil() as i32, nat.x.ceil() as i32, -1, -1)
+                (min.to_i32_ceil().x, nat.to_i32_ceil().x, -1, -1)
             } else {
-                (min.y.ceil() as i32, nat.y.ceil() as i32, -1, -1)
+                (min.to_i32_ceil().y, nat.to_i32_ceil().y, -1, -1)
             }
         } else {
             debug!("No child");

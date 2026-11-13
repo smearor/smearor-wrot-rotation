@@ -30,14 +30,14 @@ impl SmearorRotation {
 
     /// Creates a rotation from a degree value, snapping to the
     /// quarter-turn variants for exactly `0`, `90`, `180` or `270`.
-    pub fn new(degrees: f32) -> Self {
-        Self(Rotation::from_degrees(degrees as f64))
+    pub fn new(degrees: impl Into<f64>) -> Self {
+        Self(Rotation::from_degrees(degrees))
     }
 
     /// Creates a free (non-snapped) rotation - a degree value of `90.0`
     /// stays free and does not become [`Self::DEG_90`].
-    pub fn free(degrees: f32) -> Self {
-        Self(Rotation::Free(RotationRad::from_degrees(degrees as f64)))
+    pub fn free(degrees: impl Into<f64>) -> Self {
+        Self(Rotation::Free(RotationRad::from_degrees(degrees)))
     }
 
     /// The rotation angle in degrees for the GTK boundary.

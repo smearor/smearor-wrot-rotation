@@ -658,7 +658,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#baea4c761962afb5cc413abc25a27ed1cbf0ac28"
+source = "git+https://github.com/smearor/smearor-commons.git#af274a251aea353ec91be5965602b6e4b8880288"
 dependencies = [
  "cairo-rs",
  "gtk4",

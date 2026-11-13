@@ -1,7 +1,6 @@
 use crate::animation::functions::easing::EasingFunction;
 use crate::animation::rotation::RotationAnimation;
 use crate::animation::zoom::RotationZoomAnimation;
-use crate::widget::imp::region::RotatedRegionCalculator;
 use crate::widget::layout::RotatedLayout;
 use crate::widget::widget::RotationWidget;
 use glib::ControlFlow;
@@ -12,6 +11,7 @@ use glib::subclass::prelude::ObjectSubclass;
 use glib::subclass::prelude::ObjectSubclassExt;
 use glib::subclass::prelude::ObjectSubclassIsExt;
 use gtk4::PropagationPhase;
+use gtk4::cairo::Region;
 use gtk4::prelude::EventControllerExt;
 use gtk4::prelude::GestureExt;
 use gtk4::prelude::NativeExt;
@@ -22,6 +22,7 @@ use gtk4::subclass::prelude::WidgetClassExt;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::prelude::WidgetImplExt;
 use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::Position;
 use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
@@ -136,7 +137,7 @@ impl ObjectImpl for RotationWidgetImpl {
             }
 
             // 1. Convert to degrees (0.0 to 360.0)
-            let current_angle = RotationRad::new(angle_delta).to_degrees() as f32;
+            let current_angle = RotationRad::new(angle_delta).to_degrees_f32();
 
             // 2. Calculate the real delta
             // We need the difference between the current angle and the last angle
@@ -282,8 +283,8 @@ impl ObjectImpl for RotationWidgetImpl {
             let animation_speed_ms = widget_clone.imp().animation_speed.get();
             let overshoot_amount = widget_clone.imp().animation_overshoot.get();
             let mut animation = RotationZoomAnimation::new(
-                RotationRad::from_degrees(current_rotation as f64),
-                RotationRad::from_degrees(final_rotation as f64),
+                RotationRad::from_degrees(current_rotation),
+                RotationRad::from_degrees(final_rotation),
                 ScaleFactor::ONE,
                 ScaleFactor::new(0.8),
                 ScaleFactor::ONE,
@@ -308,10 +309,10 @@ impl ObjectImpl for RotationWidgetImpl {
                     };
 
                     // Apply rotation
-                    layout.imp().rotation.set(values.rotation.to_degrees() as f32);
+                    layout.imp().rotation.set(values.rotation.to_degrees_f32());
 
                     // Apply scale using transform matrix instead of CSS
-                    layout.imp().scale.set(values.scale.as_f64() as f32);
+                    layout.imp().scale.set(values.scale.as_f32());
 
                     widget.queue_allocate();
 
@@ -379,14 +380,19 @@ impl WidgetImpl for RotationWidgetImpl {
                 .and_then(|lm| lm.downcast::<RotatedLayout>().ok())
                 .map(|rl| rl.imp().rotation.get())
                 .unwrap_or(0.0);
-            let region =
-                self.calculate_rotated_region(Rect::<Pixels>::from_xywh(0.0, 0.0, width as f64, height as f64), RotationRad::from_degrees(angle as f64));
+            let region = Rect::<Pixels>::from_xywh(0.0, 0.0, width as f64, height as f64)
+                .rotated_region(RotationRad::from_degrees(angle))
+                .unwrap_or_else(|e| {
+                    error!("Failed to build rotated input region: {}", e);
+                    Region::create()
+                });
             // `set_input_region` expects surface coordinates; the computed
             // region is widget-space (0..w x 0..h) - translate by the
             // widget's origin inside the native. Only exact when ancestor
             // transforms are pure translations.
             if let Some(origin) = widget.compute_point(&native, &gtk4::graphene::Point::new(0.0, 0.0)) {
-                region.translate(origin.x().round() as i32, origin.y().round() as i32);
+                let offset = Position::<f32>::from(origin).to_i32_round();
+                region.translate(offset.x, offset.y);
             }
             surface.set_input_region(Some(&region));
         }

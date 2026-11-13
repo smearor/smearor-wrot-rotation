@@ -165,7 +165,7 @@ impl RotationWidget {
                 }
             };
 
-            layout.imp().rotation.set(new_rotation.to_degrees() as f32);
+            layout.imp().rotation.set(new_rotation.to_degrees_f32());
             self.queue_allocate();
             return;
         }
@@ -194,7 +194,7 @@ impl RotationWidget {
         // 33-66%: Rotation without zoom (scale 0.9 -> 0.9)
         // 66-100%: Rotation and zoom in (scale 0.9 -> 1.0)
         let mut animation = RotationZoomAnimation::new(
-            RotationRad::from_degrees(current_rotation as f64),
+            RotationRad::from_degrees(current_rotation),
             new_rotation,
             ScaleFactor::ONE,
             ScaleFactor::new(0.8),
@@ -223,10 +223,10 @@ impl RotationWidget {
                 };
 
                 // Apply rotation
-                layout.imp().rotation.set(values.rotation.to_degrees() as f32);
+                layout.imp().rotation.set(values.rotation.to_degrees_f32());
 
                 // Apply scale using transform matrix instead of CSS
-                layout.imp().scale.set(values.scale.as_f64() as f32);
+                layout.imp().scale.set(values.scale.as_f32());
 
                 widget.queue_allocate();
 
