@@ -101,10 +101,10 @@ impl RotationWidget {
     /// Enables or disables natural child size allocation. Defaults to
     /// `false`.
     ///
-    /// With the legacy allocation (`false`) the layout solves which child
-    /// size, rotated, reproduces the allocation - ill-conditioned near 45°,
-    /// where the child shrinks into a square. Enabled, the child keeps its
-    /// measured natural size; `measure` already reports the rotated bounding
+    /// With the default (`false`) the child is resized to the largest
+    /// rectangle with its natural aspect ratio whose rotated bounding box
+    /// fits inside the allocation. Enabled, the child keeps its measured
+    /// natural size; `measure` already reports the rotated bounding
     /// box, so the allocation always contains the rotated child.
     pub fn set_natural_child_size_enabled(&self, enabled: bool) {
         let Some(layout) = self.layout_manager() else {
