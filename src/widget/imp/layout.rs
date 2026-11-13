@@ -8,13 +8,10 @@ use gtk4::gsk::Transform;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::layout_manager::LayoutManagerImpl;
 use gtk4::subclass::prelude::DerivedObjectProperties;
-use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::Position;
-use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
 use smearor_commons_geometry::Size;
-use smearor_commons_geometry::Vec2;
 use std::cell::Cell;
 use tracing::debug;
 use tracing::trace;
@@ -78,13 +75,9 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
         let square_fit = width as f64 / (abs_cos + abs_sin);
         let blend = (denom.abs() / 0.9).min(1.0);
         let blend = blend * blend;
-        // The inverse-solve child size. At the singularity `denom` is 0
-        // and `solved` holds +-inf/NaN - `blend == 0.0` takes the
-        // square-fit branch and never reads it.
-        let solved = Vec2::new(
-            (width as f64 * abs_cos - height as f64 * abs_sin) / denom,
-            (height as f64 * abs_cos - width as f64 * abs_sin) / denom,
-        );
+        // At the singularity `unrotated_bounds` holds +-inf/NaN -
+        // `blend == 0.0` takes the square-fit branch and never reads it.
+        let solved = Size::new(width, height).to_f64().unrotated_bounds(rotation);
         let center = Position::<f32>::new(width as f32 / 2.0, height as f32 / 2.0);
         let target_size: Size<i32> = if self.natural_child_size.get() {
             // The child keeps its measured natural size: `measure`
@@ -120,8 +113,8 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
             trace!("child_min_w {child_min_w} child_nat_w {child_nat_w} child_min_h {child_min_h} child_nat_h {child_nat_h}");
 
             // Rotated bounding box of the child's natural and minimum size.
-            let min = Rect::<Pixels>::new(Vec2::ZERO, Vec2::new(child_min_w, child_min_h).to_f64()).rotated_bounds(rotation);
-            let nat = Rect::<Pixels>::new(Vec2::ZERO, Vec2::new(child_nat_w, child_nat_h).to_f64()).rotated_bounds(rotation);
+            let min = Size::new(child_min_w, child_min_h).to_f64().rotated_bounds(rotation);
+            let nat = Size::new(child_nat_w, child_nat_h).to_f64().rotated_bounds(rotation);
             if orientation == Orientation::Horizontal {
                 (min.to_i32_ceil().x, nat.to_i32_ceil().x, -1, -1)
             } else {
