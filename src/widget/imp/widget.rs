@@ -1,6 +1,3 @@
-use crate::animation::functions::easing::EasingFunction;
-use crate::animation::rotation::RotationAnimation;
-use crate::animation::zoom::RotationZoomAnimation;
 use crate::widget::layout::RotatedLayout;
 use crate::widget::widget::RotationWidget;
 use glib::ControlFlow;
@@ -17,10 +14,15 @@ use gtk4::prelude::GestureExt;
 use gtk4::prelude::NativeExt;
 use gtk4::prelude::SurfaceExt;
 use gtk4::prelude::WidgetExt;
-use gtk4::prelude::WidgetExtManual;
 use gtk4::subclass::prelude::WidgetClassExt;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::prelude::WidgetImplExt;
+use smearor_commons_animation::EasingFunction;
+use smearor_commons_animation::Span;
+use smearor_commons_animation::ThreePhaseSpan;
+use smearor_commons_animation::TimedAnimation;
+use smearor_commons_animation::drive;
+use smearor_commons_geometry::Fraction;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::Position;
 use smearor_commons_geometry::Rect;
@@ -37,9 +39,7 @@ use tracing::error;
 #[derive(Default)]
 pub struct RotationWidgetImpl {
     pub child: RefCell<Option<gtk4::Widget>>,
-    pub animation: RefCell<Option<RotationAnimation>>,
     pub animation_speed: Cell<u64>,
-    pub rotation_zoom_animation: RefCell<Option<RotationZoomAnimation>>,
     pub animations_enabled: Cell<bool>,
     pub animation_overshoot: Cell<f64>,
     /// Whether rotation via gesture is active. Defaults to `true`.
@@ -73,6 +73,11 @@ impl ObjectImpl for RotationWidgetImpl {
         // fullscreen case; nested widgets opt out via
         // `set_input_region_enabled(false)`.
         self.input_region_enabled.set(true);
+
+        // Penner's canonical overshoot strength - a `0.0` default
+        // would silently degenerate the overshoot easing to a plain
+        // quadratic ease-in-out.
+        self.animation_overshoot.set(EasingFunction::DEFAULT_OVERSHOOT);
 
         // Add gesture recognizers for rotation and pinch
         let widget = self.obj();
@@ -280,53 +285,31 @@ impl ObjectImpl for RotationWidgetImpl {
                 return;
             }
 
-            // Start overshoot animation using RotationZoomAnimation
+            // Start overshoot animation: rotate on the shortest arc
+            // while zooming out, holding and zooming back in.
             let animation_speed_ms = widget_clone.imp().animation_speed.get();
             let overshoot_amount = widget_clone.imp().animation_overshoot.get();
-            let mut animation = RotationZoomAnimation::new(
-                RotationRad::from_degrees(current_rotation),
-                RotationRad::from_degrees(final_rotation),
-                ScaleFactor::ONE,
-                ScaleFactor::new(0.8),
-                ScaleFactor::ONE,
+            let mut animation = TimedAnimation::new(
+                (
+                    Span::new(RotationRad::from_degrees(current_rotation), RotationRad::from_degrees(final_rotation)),
+                    ThreePhaseSpan::new(ScaleFactor::ONE, ScaleFactor::new(0.8), ScaleFactor::ONE, Fraction::new(1.0 / 3.0), Fraction::new(2.0 / 3.0)),
+                ),
                 Duration::from_millis(animation_speed_ms),
                 EasingFunction::Overshoot { overshoot_amount },
             );
             animation.start();
-            *widget_clone.imp().rotation_zoom_animation.borrow_mut() = Some(animation);
 
-            // Start animation tick callback
-            widget_clone.add_tick_callback(move |widget, _frame_clock| {
-                let imp = widget.imp();
-                if let Some(ref mut anim) = *imp.rotation_zoom_animation.borrow_mut() {
-                    let Some(values) = anim.get_current_values_with_phases() else {
-                        return ControlFlow::Break;
-                    };
-                    let Some(layout) = widget.layout_manager() else {
-                        return ControlFlow::Continue;
-                    };
-                    let Ok(layout) = layout.downcast::<RotatedLayout>() else {
-                        return ControlFlow::Continue;
-                    };
-
-                    // Apply rotation
-                    layout.imp().rotation.set(values.rotation);
-
-                    // Apply scale using transform matrix instead of CSS
-                    layout.imp().scale.set(values.scale);
-
-                    widget.queue_allocate();
-
-                    if anim.is_complete() {
-                        // Reset scale to 1.0 after animation completes
-                        layout.imp().scale.set(ScaleFactor::ONE);
-                        ControlFlow::Break
-                    } else {
-                        ControlFlow::Continue
-                    }
-                } else {
-                    ControlFlow::Break
-                }
+            drive(&widget_clone, animation, |widget, (rotation, scale)| {
+                let Some(layout) = widget.layout_manager() else {
+                    return ControlFlow::Continue;
+                };
+                let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                    return ControlFlow::Continue;
+                };
+                layout.imp().rotation.set(rotation);
+                layout.imp().scale.set(scale);
+                widget.queue_allocate();
+                ControlFlow::Continue
             });
 
             // Mark rotation as applied to prevent further rotations

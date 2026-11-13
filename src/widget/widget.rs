@@ -1,6 +1,4 @@
 use crate::RotationControlHandler;
-use crate::animation::functions::easing::EasingFunction;
-use crate::animation::zoom::RotationZoomAnimation;
 use crate::rotation::SmearorRotation;
 use crate::widget::imp::widget::RotationWidgetImpl;
 use crate::widget::layout::RotatedLayout;
@@ -11,6 +9,12 @@ use gtk4::PropagationPhase;
 use gtk4::Widget;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::*;
+use smearor_commons_animation::EasingFunction;
+use smearor_commons_animation::Span;
+use smearor_commons_animation::ThreePhaseSpan;
+use smearor_commons_animation::TimedAnimation;
+use smearor_commons_animation::drive;
+use smearor_commons_geometry::Fraction;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
@@ -189,57 +193,31 @@ impl RotationWidget {
         let current_rotation = layout.imp().rotation.get();
         let animation_speed_ms = imp.animation_speed.get();
 
-        // Create rotation zoom animation with three phases
-        // 0-33%: Rotation and zoom out (scale 1.0 -> 0.9)
-        // 33-66%: Rotation without zoom (scale 0.9 -> 0.9)
-        // 66-100%: Rotation and zoom in (scale 0.9 -> 1.0)
-        let mut animation = RotationZoomAnimation::new(
-            current_rotation,
-            new_rotation,
-            ScaleFactor::ONE,
-            ScaleFactor::new(0.8),
-            ScaleFactor::ONE,
+        // Rotation on the shortest arc plus a three-phase zoom
+        // (out, hold, back in) - the same overshoot easing the
+        // rotate gesture uses.
+        let overshoot_amount = imp.animation_overshoot.get();
+        let mut animation = TimedAnimation::new(
+            (
+                Span::new(current_rotation, new_rotation),
+                ThreePhaseSpan::new(ScaleFactor::ONE, ScaleFactor::new(0.8), ScaleFactor::ONE, Fraction::new(1.0 / 3.0), Fraction::new(2.0 / 3.0)),
+            ),
             Duration::from_millis(animation_speed_ms),
-            EasingFunction::EaseInOut,
+            EasingFunction::Overshoot { overshoot_amount },
         );
         animation.start();
-        *imp.rotation_zoom_animation.borrow_mut() = Some(animation);
 
-        self.add_tick_callback(move |widget, _frame_clock| {
-            let imp = widget.imp();
-            if let Some(ref mut anim) = *imp.rotation_zoom_animation.borrow_mut() {
-                let Some(values) = anim.get_current_values_with_phases() else {
-                    return glib::ControlFlow::Break;
-                };
-
-                let layout = match widget.layout_manager() {
-                    Some(lm) => lm,
-                    None => return glib::ControlFlow::Continue,
-                };
-
-                let layout = match layout.downcast::<RotatedLayout>() {
-                    Ok(rl) => rl,
-                    Err(_) => return glib::ControlFlow::Continue,
-                };
-
-                // Apply rotation
-                layout.imp().rotation.set(values.rotation);
-
-                // Apply scale using transform matrix instead of CSS
-                layout.imp().scale.set(values.scale);
-
-                widget.queue_allocate();
-
-                if anim.is_complete() {
-                    // Reset scale to 1.0 after animation completes
-                    layout.imp().scale.set(ScaleFactor::ONE);
-                    glib::ControlFlow::Break
-                } else {
-                    glib::ControlFlow::Continue
-                }
-            } else {
-                glib::ControlFlow::Break
-            }
+        drive(self, animation, |widget, (rotation, scale)| {
+            let Some(layout) = widget.layout_manager() else {
+                return glib::ControlFlow::Continue;
+            };
+            let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                return glib::ControlFlow::Continue;
+            };
+            layout.imp().rotation.set(rotation);
+            layout.imp().scale.set(scale);
+            widget.queue_allocate();
+            glib::ControlFlow::Continue
         });
     }
 
