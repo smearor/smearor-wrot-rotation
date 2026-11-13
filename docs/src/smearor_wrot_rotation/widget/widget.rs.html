@@ -101,10 +101,10 @@
 <a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Enables or disables natural child size allocation. Defaults to
 <a href=#102 id=102 data-nosnippet>102</a>    /// `false`.
 <a href=#103 id=103 data-nosnippet>103</a>    ///
-<a href=#104 id=104 data-nosnippet>104</a>    /// With the legacy allocation (`false`) the layout solves which child
-<a href=#105 id=105 data-nosnippet>105</a>    /// size, rotated, reproduces the allocation - ill-conditioned near 45°,
-<a href=#106 id=106 data-nosnippet>106</a>    /// where the child shrinks into a square. Enabled, the child keeps its
-<a href=#107 id=107 data-nosnippet>107</a>    /// measured natural size; `measure` already reports the rotated bounding
+<a href=#104 id=104 data-nosnippet>104</a>    /// With the default (`false`) the child is resized to the largest
+<a href=#105 id=105 data-nosnippet>105</a>    /// rectangle with its natural aspect ratio whose rotated bounding box
+<a href=#106 id=106 data-nosnippet>106</a>    /// fits inside the allocation. Enabled, the child keeps its measured
+<a href=#107 id=107 data-nosnippet>107</a>    /// natural size; `measure` already reports the rotated bounding
 <a href=#108 id=108 data-nosnippet>108</a>    /// box, so the allocation always contains the rotated child.
 <a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub fn </span>set_natural_child_size_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, enabled: bool) {
 <a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(layout) = <span class="self">self</span>.layout_manager() <span class="kw">else </span>{

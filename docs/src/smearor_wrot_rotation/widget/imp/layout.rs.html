@@ -23,11 +23,11 @@
 <a href=#23 id=23 data-nosnippet>23</a>    </span><span class="kw">pub </span>rotation: Cell&lt;RotationRad&gt;,
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="attr">#[properties(get, set, notify)]
 <a href=#25 id=25 data-nosnippet>25</a>    </span><span class="kw">pub </span>scale: Cell&lt;ScaleFactor&gt;,
-<a href=#26 id=26 data-nosnippet>26</a>    <span class="doccomment">/// When `true`, the child is allocated its measured natural size instead
-<a href=#27 id=27 data-nosnippet>27</a>    /// of solving which rotated child size reproduces the allocation. The
-<a href=#28 id=28 data-nosnippet>28</a>    /// inverse solve is ill-conditioned near 45 degrees (and symmetric bands),
-<a href=#29 id=29 data-nosnippet>29</a>    /// where it shrinks non-square children into a square. Defaults to
-<a href=#30 id=30 data-nosnippet>30</a>    /// `false` to preserve the legacy allocation behavior.
+<a href=#26 id=26 data-nosnippet>26</a>    <span class="doccomment">/// When `true`, the child is allocated its measured natural size.
+<a href=#27 id=27 data-nosnippet>27</a>    /// When `false`, it is resized to the largest rectangle with its
+<a href=#28 id=28 data-nosnippet>28</a>    /// natural aspect ratio whose rotated bounding box fits inside the
+<a href=#29 id=29 data-nosnippet>29</a>    /// allocation (`unrotated_fit` - a one-sided condition that is never
+<a href=#30 id=30 data-nosnippet>30</a>    /// singular).
 <a href=#31 id=31 data-nosnippet>31</a>    </span><span class="attr">#[properties(get, set, notify)]
 <a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>natural_child_size: Cell&lt;bool&gt;,
 <a href=#33 id=33 data-nosnippet>33</a>}
@@ -60,84 +60,61 @@
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">let </span>rotation = <span class="self">self</span>.rotation.get();
 <a href=#61 id=61 data-nosnippet>61</a>        <span class="kw">let </span>angle_deg = rotation.to_degrees_f32();
 <a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span>current_scale = <span class="self">self</span>.scale.get().as_f32();
-<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">let </span>(sin, cos) = rotation.sin_cos();
-<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>abs_cos = cos.abs();
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>abs_sin = sin.abs();
-<a href=#66 id=66 data-nosnippet>66</a>        <span class="comment">// `denom` is `cos(2θ)` and vanishes at 45° + k·90° - the
-<a href=#67 id=67 data-nosnippet>67</a>        // matrix singularity where no rotated child size can
-<a href=#68 id=68 data-nosnippet>68</a>        // reproduce a non-square allocation and the inverse
-<a href=#69 id=69 data-nosnippet>69</a>        // solve diverges. Blend quadratically from the solved
-<a href=#70 id=70 data-nosnippet>70</a>        // size at the band edge (`|denom| = 0.9`, continuous
-<a href=#71 id=71 data-nosnippet>71</a>        // with the pure solve outside) down to the inscribed fit
-<a href=#72 id=72 data-nosnippet>72</a>        // at the singularity; a hard switch jumped the child
-<a href=#73 id=73 data-nosnippet>73</a>        // size whenever `|denom|` crossed the threshold.
-<a href=#74 id=74 data-nosnippet>74</a>        </span><span class="kw">let </span>denom = abs_cos * abs_cos - abs_sin * abs_sin;
-<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>blend = (denom.abs() / <span class="number">0.9</span>).min(<span class="number">1.0</span>);
-<a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>blend = blend * blend;
-<a href=#77 id=77 data-nosnippet>77</a>        <span class="kw">let </span>allocation = Size::new(width, height).to_f64();
-<a href=#78 id=78 data-nosnippet>78</a>        <span class="comment">// At the singularity `unrotated_bounds` holds +-inf/NaN -
-<a href=#79 id=79 data-nosnippet>79</a>        // `blend == 0.0` takes the inscribed-fit branch below and
-<a href=#80 id=80 data-nosnippet>80</a>        // never reads it.
-<a href=#81 id=81 data-nosnippet>81</a>        </span><span class="kw">let </span>solved = allocation.unrotated_bounds(rotation);
-<a href=#82 id=82 data-nosnippet>82</a>        <span class="comment">// The child's natural aspect drives the inscribed fit, so
-<a href=#83 id=83 data-nosnippet>83</a>        // the fallback keeps the content's proportions.
-<a href=#84 id=84 data-nosnippet>84</a>        </span><span class="kw">let </span>(<span class="kw">_</span>, child_nat_w, <span class="kw">_</span>, <span class="kw">_</span>) = c.measure(Orientation::Horizontal, -<span class="number">1</span>);
-<a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">let </span>(<span class="kw">_</span>, child_nat_h, <span class="kw">_</span>, <span class="kw">_</span>) = c.measure(Orientation::Vertical, -<span class="number">1</span>);
-<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>nat_aspect = <span class="kw">if </span>child_nat_w &gt; <span class="number">0 </span>&amp;&amp; child_nat_h &gt; <span class="number">0 </span>{
-<a href=#87 id=87 data-nosnippet>87</a>            f64::from(child_nat_w) / f64::from(child_nat_h)
-<a href=#88 id=88 data-nosnippet>88</a>        } <span class="kw">else </span>{
-<a href=#89 id=89 data-nosnippet>89</a>            <span class="number">1.0
-<a href=#90 id=90 data-nosnippet>90</a>        </span>};
-<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span>fit = allocation.unrotated_fit(nat_aspect, rotation);
-<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span>center = Position::&lt;f32&gt;::new(width <span class="kw">as </span>f32 / <span class="number">2.0</span>, height <span class="kw">as </span>f32 / <span class="number">2.0</span>);
-<a href=#93 id=93 data-nosnippet>93</a>        <span class="kw">let </span>target_size: Size&lt;i32&gt; = <span class="kw">if </span><span class="self">self</span>.natural_child_size.get() {
-<a href=#94 id=94 data-nosnippet>94</a>            <span class="comment">// The child keeps its measured natural size: `measure`
-<a href=#95 id=95 data-nosnippet>95</a>            // reports the rotated bounding box, so the allocation
-<a href=#96 id=96 data-nosnippet>96</a>            // always contains the rotated child.
-<a href=#97 id=97 data-nosnippet>97</a>            </span>Size::new(child_nat_w, child_nat_h)
-<a href=#98 id=98 data-nosnippet>98</a>        } <span class="kw">else if </span>blend == <span class="number">0.0 </span>|| solved.x &lt;= <span class="number">0.0 </span>|| solved.y &lt;= <span class="number">0.0 </span>{
-<a href=#99 id=99 data-nosnippet>99</a>            <span class="comment">// `blend == 0` is the matrix singularity; a non-positive
-<a href=#100 id=100 data-nosnippet>100</a>            // solved component means no rectangle rotated by this
-<a href=#101 id=101 data-nosnippet>101</a>            // angle can fill the allocation (the achievable bounds
-<a href=#102 id=102 data-nosnippet>102</a>            // aspect is bounded by [tan θ, cot θ]). In both cases the
-<a href=#103 id=103 data-nosnippet>103</a>            // largest inscribed child of natural aspect is bounded
-<a href=#104 id=104 data-nosnippet>104</a>            // and keeps the content visible.
-<a href=#105 id=105 data-nosnippet>105</a>            </span>fit.map(|v| v <span class="kw">as </span>i32)
-<a href=#106 id=106 data-nosnippet>106</a>        } <span class="kw">else </span>{
-<a href=#107 id=107 data-nosnippet>107</a>            Size::new(fit.x + (solved.x - fit.x) * blend, fit.y + (solved.y - fit.y) * blend).map(|v| v <span class="kw">as </span>i32)
-<a href=#108 id=108 data-nosnippet>108</a>        };
-<a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">let </span>child_center = target_size.map(|v| v <span class="kw">as </span>f32 / -<span class="number">2.0</span>);
-<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">let </span>transform = Transform::new()
-<a href=#112 id=112 data-nosnippet>112</a>            .translate(<span class="kw-2">&amp;</span>center.into())
-<a href=#113 id=113 data-nosnippet>113</a>            .rotate(angle_deg)
-<a href=#114 id=114 data-nosnippet>114</a>            .scale(current_scale, current_scale)
-<a href=#115 id=115 data-nosnippet>115</a>            .translate(<span class="kw-2">&amp;</span>child_center.into());
-<a href=#116 id=116 data-nosnippet>116</a>
-<a href=#117 id=117 data-nosnippet>117</a>        <span class="macro">trace!</span>(<span class="string">"size {target_size} baseline {baseline} transform {transform:?}"</span>);
-<a href=#118 id=118 data-nosnippet>118</a>        c.allocate(target_size.x, target_size.y, baseline, <span class="prelude-val">Some</span>(transform));
-<a href=#119 id=119 data-nosnippet>119</a>    }
-<a href=#120 id=120 data-nosnippet>120</a>
-<a href=#121 id=121 data-nosnippet>121</a>    <span class="kw">fn </span>measure(<span class="kw-2">&amp;</span><span class="self">self</span>, widget: <span class="kw-2">&amp;</span>gtk4::Widget, orientation: Orientation, _for_size: i32) -&gt; (i32, i32, i32, i32) {
-<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">let </span>rotation = <span class="self">self</span>.rotation.get();
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(child) = widget.first_child() {
-<a href=#125 id=125 data-nosnippet>125</a>            <span class="kw">let </span>(child_min_w, child_nat_w, <span class="kw">_</span>, <span class="kw">_</span>) = child.measure(Orientation::Horizontal, -<span class="number">1</span>);
-<a href=#126 id=126 data-nosnippet>126</a>            <span class="kw">let </span>(child_min_h, child_nat_h, <span class="kw">_</span>, <span class="kw">_</span>) = child.measure(Orientation::Vertical, -<span class="number">1</span>);
-<a href=#127 id=127 data-nosnippet>127</a>            <span class="macro">trace!</span>(<span class="string">"child_min_w {child_min_w} child_nat_w {child_nat_w} child_min_h {child_min_h} child_nat_h {child_nat_h}"</span>);
-<a href=#128 id=128 data-nosnippet>128</a>
-<a href=#129 id=129 data-nosnippet>129</a>            <span class="comment">// Rotated bounding box of the child's natural and minimum size.
-<a href=#130 id=130 data-nosnippet>130</a>            </span><span class="kw">let </span>min = Size::new(child_min_w, child_min_h).to_f64().rotated_bounds(rotation);
-<a href=#131 id=131 data-nosnippet>131</a>            <span class="kw">let </span>nat = Size::new(child_nat_w, child_nat_h).to_f64().rotated_bounds(rotation);
-<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">if </span>orientation == Orientation::Horizontal {
-<a href=#133 id=133 data-nosnippet>133</a>                (min.to_i32_ceil().x, nat.to_i32_ceil().x, -<span class="number">1</span>, -<span class="number">1</span>)
-<a href=#134 id=134 data-nosnippet>134</a>            } <span class="kw">else </span>{
-<a href=#135 id=135 data-nosnippet>135</a>                (min.to_i32_ceil().y, nat.to_i32_ceil().y, -<span class="number">1</span>, -<span class="number">1</span>)
-<a href=#136 id=136 data-nosnippet>136</a>            }
-<a href=#137 id=137 data-nosnippet>137</a>        } <span class="kw">else </span>{
-<a href=#138 id=138 data-nosnippet>138</a>            <span class="macro">debug!</span>(<span class="string">"No child"</span>);
-<a href=#139 id=139 data-nosnippet>139</a>            (<span class="number">0</span>, <span class="number">0</span>, -<span class="number">1</span>, -<span class="number">1</span>)
-<a href=#140 id=140 data-nosnippet>140</a>        }
-<a href=#141 id=141 data-nosnippet>141</a>    }
-<a href=#142 id=142 data-nosnippet>142</a>}
+<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">let </span>center = Position::&lt;f32&gt;::new(width <span class="kw">as </span>f32 / <span class="number">2.0</span>, height <span class="kw">as </span>f32 / <span class="number">2.0</span>);
+<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>(<span class="kw">_</span>, child_nat_w, <span class="kw">_</span>, <span class="kw">_</span>) = c.measure(Orientation::Horizontal, -<span class="number">1</span>);
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>(<span class="kw">_</span>, child_nat_h, <span class="kw">_</span>, <span class="kw">_</span>) = c.measure(Orientation::Vertical, -<span class="number">1</span>);
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>target_size: Size&lt;i32&gt; = <span class="kw">if </span><span class="self">self</span>.natural_child_size.get() {
+<a href=#67 id=67 data-nosnippet>67</a>            <span class="comment">// The child keeps its measured natural size: `measure`
+<a href=#68 id=68 data-nosnippet>68</a>            // reports the rotated bounding box, so the allocation
+<a href=#69 id=69 data-nosnippet>69</a>            // always contains the rotated child.
+<a href=#70 id=70 data-nosnippet>70</a>            </span>Size::new(child_nat_w, child_nat_h)
+<a href=#71 id=71 data-nosnippet>71</a>        } <span class="kw">else </span>{
+<a href=#72 id=72 data-nosnippet>72</a>            <span class="comment">// The child keeps its natural aspect ratio and is resized
+<a href=#73 id=73 data-nosnippet>73</a>            // to the largest rectangle whose rotated bounding box fits
+<a href=#74 id=74 data-nosnippet>74</a>            // inside the allocation. `unrotated_fit` is a one-sided
+<a href=#75 id=75 data-nosnippet>75</a>            // condition, so it is never singular - the previous exact
+<a href=#76 id=76 data-nosnippet>76</a>            // `unrotated_bounds` solve forced a bounds-fill aspect
+<a href=#77 id=77 data-nosnippet>77</a>            // onto the child, letterboxing aspect-fixed content such
+<a href=#78 id=78 data-nosnippet>78</a>            // as a wide image down to an invisible sliver.
+<a href=#79 id=79 data-nosnippet>79</a>            </span><span class="kw">let </span>nat_aspect = <span class="kw">if </span>child_nat_w &gt; <span class="number">0 </span>&amp;&amp; child_nat_h &gt; <span class="number">0 </span>{
+<a href=#80 id=80 data-nosnippet>80</a>                f64::from(child_nat_w) / f64::from(child_nat_h)
+<a href=#81 id=81 data-nosnippet>81</a>            } <span class="kw">else </span>{
+<a href=#82 id=82 data-nosnippet>82</a>                <span class="number">1.0
+<a href=#83 id=83 data-nosnippet>83</a>            </span>};
+<a href=#84 id=84 data-nosnippet>84</a>            Size::new(width, height).to_f64().unrotated_fit(nat_aspect, rotation).map(|v| v <span class="kw">as </span>i32)
+<a href=#85 id=85 data-nosnippet>85</a>        };
+<a href=#86 id=86 data-nosnippet>86</a>
+<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span>child_center = target_size.map(|v| v <span class="kw">as </span>f32 / -<span class="number">2.0</span>);
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>transform = Transform::new()
+<a href=#89 id=89 data-nosnippet>89</a>            .translate(<span class="kw-2">&amp;</span>center.into())
+<a href=#90 id=90 data-nosnippet>90</a>            .rotate(angle_deg)
+<a href=#91 id=91 data-nosnippet>91</a>            .scale(current_scale, current_scale)
+<a href=#92 id=92 data-nosnippet>92</a>            .translate(<span class="kw-2">&amp;</span>child_center.into());
+<a href=#93 id=93 data-nosnippet>93</a>
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="macro">trace!</span>(<span class="string">"size {target_size} baseline {baseline} transform {transform:?}"</span>);
+<a href=#95 id=95 data-nosnippet>95</a>        c.allocate(target_size.x, target_size.y, baseline, <span class="prelude-val">Some</span>(transform));
+<a href=#96 id=96 data-nosnippet>96</a>    }
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a>    <span class="kw">fn </span>measure(<span class="kw-2">&amp;</span><span class="self">self</span>, widget: <span class="kw-2">&amp;</span>gtk4::Widget, orientation: Orientation, _for_size: i32) -&gt; (i32, i32, i32, i32) {
+<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">let </span>rotation = <span class="self">self</span>.rotation.get();
+<a href=#100 id=100 data-nosnippet>100</a>
+<a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(child) = widget.first_child() {
+<a href=#102 id=102 data-nosnippet>102</a>            <span class="kw">let </span>(child_min_w, child_nat_w, <span class="kw">_</span>, <span class="kw">_</span>) = child.measure(Orientation::Horizontal, -<span class="number">1</span>);
+<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">let </span>(child_min_h, child_nat_h, <span class="kw">_</span>, <span class="kw">_</span>) = child.measure(Orientation::Vertical, -<span class="number">1</span>);
+<a href=#104 id=104 data-nosnippet>104</a>            <span class="macro">trace!</span>(<span class="string">"child_min_w {child_min_w} child_nat_w {child_nat_w} child_min_h {child_min_h} child_nat_h {child_nat_h}"</span>);
+<a href=#105 id=105 data-nosnippet>105</a>
+<a href=#106 id=106 data-nosnippet>106</a>            <span class="comment">// Rotated bounding box of the child's natural and minimum size.
+<a href=#107 id=107 data-nosnippet>107</a>            </span><span class="kw">let </span>min = Size::new(child_min_w, child_min_h).to_f64().rotated_bounds(rotation);
+<a href=#108 id=108 data-nosnippet>108</a>            <span class="kw">let </span>nat = Size::new(child_nat_w, child_nat_h).to_f64().rotated_bounds(rotation);
+<a href=#109 id=109 data-nosnippet>109</a>            <span class="kw">if </span>orientation == Orientation::Horizontal {
+<a href=#110 id=110 data-nosnippet>110</a>                (min.to_i32_ceil().x, nat.to_i32_ceil().x, -<span class="number">1</span>, -<span class="number">1</span>)
+<a href=#111 id=111 data-nosnippet>111</a>            } <span class="kw">else </span>{
+<a href=#112 id=112 data-nosnippet>112</a>                (min.to_i32_ceil().y, nat.to_i32_ceil().y, -<span class="number">1</span>, -<span class="number">1</span>)
+<a href=#113 id=113 data-nosnippet>113</a>            }
+<a href=#114 id=114 data-nosnippet>114</a>        } <span class="kw">else </span>{
+<a href=#115 id=115 data-nosnippet>115</a>            <span class="macro">debug!</span>(<span class="string">"No child"</span>);
+<a href=#116 id=116 data-nosnippet>116</a>            (<span class="number">0</span>, <span class="number">0</span>, -<span class="number">1</span>, -<span class="number">1</span>)
+<a href=#117 id=117 data-nosnippet>117</a>        }
+<a href=#118 id=118 data-nosnippet>118</a>    }
+<a href=#119 id=119 data-nosnippet>119</a>}
 </code></pre></div></section></main></body></html>
