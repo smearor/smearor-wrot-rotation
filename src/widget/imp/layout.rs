@@ -9,6 +9,7 @@ use gtk4::prelude::WidgetExt;
 use gtk4::subclass::layout_manager::LayoutManagerImpl;
 use gtk4::subclass::prelude::DerivedObjectProperties;
 use smearor_commons_geometry::AspectRatio;
+use smearor_commons_geometry::CenteredTransform;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
 use smearor_commons_geometry::Size;
@@ -79,14 +80,7 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
             allocation.to_f64().unrotated_fit(nat_aspect, rotation).map(|v| v as i32)
         };
 
-        let angle_deg = rotation.to_degrees_f32();
-        let current_scale = self.scale.get().as_f32();
-        let child_center = target_size.map(|v| v as f32 / -2.0);
-        let transform = Transform::new()
-            .translate(&center.into())
-            .rotate(angle_deg)
-            .scale(current_scale, current_scale)
-            .translate(&child_center.into());
+        let transform: Transform = CenteredTransform::new(center, target_size.to_f32(), rotation, self.scale.get()).into();
 
         trace!("size {target_size} baseline {baseline} transform {transform:?}");
         c.allocate(target_size.x, target_size.y, baseline, Some(transform));
