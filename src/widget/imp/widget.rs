@@ -1,3 +1,4 @@
+use crate::AnimationKind;
 use crate::widget::layout::RotatedLayout;
 use crate::widget::widget::RotationWidget;
 use glib::ControlFlow;
@@ -18,9 +19,9 @@ use gtk4::subclass::prelude::WidgetClassExt;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::prelude::WidgetImplExt;
 use smearor_commons_animation::EasingFunction;
+use smearor_commons_animation::RotationZoomAnimation;
 use smearor_commons_animation::Span;
 use smearor_commons_animation::ThreePhaseSpan;
-use smearor_commons_animation::TimedAnimation;
 use smearor_commons_animation::drive;
 use smearor_commons_geometry::Fraction;
 use smearor_commons_geometry::Pixels;
@@ -39,6 +40,8 @@ use tracing::error;
 #[derive(Default)]
 pub struct RotationWidgetImpl {
     pub child: RefCell<Option<gtk4::Widget>>,
+    pub animation_kind: Cell<AnimationKind>,
+    pub animation_zoom: Cell<ScaleFactor>,
     pub animation_speed: Cell<u64>,
     pub animations_enabled: Cell<bool>,
     pub animation_overshoot: Cell<f64>,
@@ -78,6 +81,9 @@ impl ObjectImpl for RotationWidgetImpl {
         // would silently degenerate the overshoot easing to a plain
         // quadratic ease-in-out.
         self.animation_overshoot.set(EasingFunction::DEFAULT_OVERSHOOT);
+
+        // The scale at the dip of the three-phase zoom.
+        self.animation_zoom.set(ScaleFactor::new(0.8));
 
         // Add gesture recognizers for rotation and pinch
         let widget = self.obj();
@@ -289,10 +295,16 @@ impl ObjectImpl for RotationWidgetImpl {
             // while zooming out, holding and zooming back in.
             let animation_speed_ms = widget_clone.imp().animation_speed.get();
             let overshoot_amount = widget_clone.imp().animation_overshoot.get();
-            let mut animation = TimedAnimation::new(
+            let mut animation = RotationZoomAnimation::new(
                 (
                     Span::new(RotationRad::from_degrees(current_rotation), RotationRad::from_degrees(final_rotation)),
-                    ThreePhaseSpan::new(ScaleFactor::ONE, ScaleFactor::new(0.8), ScaleFactor::ONE, Fraction::new(1.0 / 3.0), Fraction::new(2.0 / 3.0)),
+                    ThreePhaseSpan::new(
+                        ScaleFactor::ONE,
+                        widget_clone.imp().animation_zoom.get(),
+                        ScaleFactor::ONE,
+                        Fraction::new(1.0 / 3.0),
+                        Fraction::new(2.0 / 3.0),
+                    ),
                 ),
                 Duration::from_millis(animation_speed_ms),
                 EasingFunction::Overshoot { overshoot_amount },

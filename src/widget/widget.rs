@@ -1,3 +1,4 @@
+use crate::AnimationKind;
 use crate::RotationControlHandler;
 use crate::rotation::SmearorRotation;
 use crate::widget::imp::widget::RotationWidgetImpl;
@@ -10,9 +11,10 @@ use gtk4::Widget;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::*;
 use smearor_commons_animation::EasingFunction;
+use smearor_commons_animation::RotationAnimation;
+use smearor_commons_animation::RotationZoomAnimation;
 use smearor_commons_animation::Span;
 use smearor_commons_animation::ThreePhaseSpan;
-use smearor_commons_animation::TimedAnimation;
 use smearor_commons_animation::drive;
 use smearor_commons_geometry::Fraction;
 use smearor_commons_geometry::Pixels;
@@ -147,6 +149,34 @@ impl RotationWidget {
         self.imp().animation_overshoot.set(overshoot);
     }
 
+    /// Builder-style method to select the animation applied by
+    /// [`Self::set_rotation_with_animation`]. Defaults to
+    /// [`AnimationKind::RotationZoom`].
+    pub fn with_animation_kind(self, kind: AnimationKind) -> Self {
+        self.set_animation_kind(kind);
+        self
+    }
+
+    /// Selects the animation applied by
+    /// [`Self::set_rotation_with_animation`].
+    pub fn set_animation_kind(&self, kind: AnimationKind) {
+        self.imp().animation_kind.set(kind);
+    }
+
+    /// Builder-style method to configure the scale at the dip of
+    /// the three-phase zoom. Defaults to `0.8`; `1.0` means no zoom.
+    pub fn with_animation_zoom(self, zoom: ScaleFactor) -> Self {
+        self.set_animation_zoom(zoom);
+        self
+    }
+
+    /// Sets the scale at the dip of the three-phase zoom - how far
+    /// the child shrinks mid-animation (`1.0` = no zoom, `0.5` =
+    /// half size).
+    pub fn set_animation_zoom(&self, zoom: ScaleFactor) {
+        self.imp().animation_zoom.set(zoom);
+    }
+
     pub fn set_rotation_with_animation(&self, new_rotation: RotationRad) {
         let imp = self.imp();
 
@@ -197,28 +227,56 @@ impl RotationWidget {
         // (out, hold, back in) - the same overshoot easing the
         // rotate gesture uses.
         let overshoot_amount = imp.animation_overshoot.get();
-        let mut animation = TimedAnimation::new(
-            (
-                Span::new(current_rotation, new_rotation),
-                ThreePhaseSpan::new(ScaleFactor::ONE, ScaleFactor::new(0.8), ScaleFactor::ONE, Fraction::new(1.0 / 3.0), Fraction::new(2.0 / 3.0)),
-            ),
-            Duration::from_millis(animation_speed_ms),
-            EasingFunction::Overshoot { overshoot_amount },
-        );
-        animation.start();
-
-        drive(self, animation, |widget, (rotation, scale)| {
-            let Some(layout) = widget.layout_manager() else {
-                return glib::ControlFlow::Continue;
-            };
-            let Ok(layout) = layout.downcast::<RotatedLayout>() else {
-                return glib::ControlFlow::Continue;
-            };
-            layout.imp().rotation.set(rotation);
-            layout.imp().scale.set(scale);
-            widget.queue_allocate();
-            glib::ControlFlow::Continue
-        });
+        let duration = Duration::from_millis(animation_speed_ms);
+        match imp.animation_kind.get() {
+            // Rotation on the shortest arc plus a three-phase zoom
+            // (out, hold, back in).
+            AnimationKind::RotationZoom => {
+                let mut animation = RotationZoomAnimation::new(
+                    (
+                        Span::new(current_rotation, new_rotation),
+                        ThreePhaseSpan::new(
+                            ScaleFactor::ONE,
+                            imp.animation_zoom.get(),
+                            ScaleFactor::ONE,
+                            Fraction::new(1.0 / 3.0),
+                            Fraction::new(2.0 / 3.0),
+                        ),
+                    ),
+                    duration,
+                    EasingFunction::Overshoot { overshoot_amount },
+                );
+                animation.start();
+                drive(self, animation, |widget, (rotation, scale)| {
+                    let Some(layout) = widget.layout_manager() else {
+                        return glib::ControlFlow::Continue;
+                    };
+                    let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                        return glib::ControlFlow::Continue;
+                    };
+                    layout.imp().rotation.set(rotation);
+                    layout.imp().scale.set(scale);
+                    widget.queue_allocate();
+                    glib::ControlFlow::Continue
+                });
+            }
+            // Rotation on the shortest arc, no zoom.
+            AnimationKind::Rotation => {
+                let mut animation = RotationAnimation::new(Span::new(current_rotation, new_rotation), duration, EasingFunction::Overshoot { overshoot_amount });
+                animation.start();
+                drive(self, animation, |widget, rotation| {
+                    let Some(layout) = widget.layout_manager() else {
+                        return glib::ControlFlow::Continue;
+                    };
+                    let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                        return glib::ControlFlow::Continue;
+                    };
+                    layout.imp().rotation.set(rotation);
+                    widget.queue_allocate();
+                    glib::ControlFlow::Continue
+                });
+            }
+        }
     }
 
     pub fn set_child(&self, child: Option<&impl IsA<gtk4::Widget>>) {

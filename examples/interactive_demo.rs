@@ -7,6 +7,7 @@ use gtk4::Align;
 use gtk4::Application;
 use gtk4::ApplicationWindow;
 use gtk4::Button;
+use gtk4::DropDown;
 use gtk4::Entry;
 use gtk4::Frame;
 use gtk4::Label;
@@ -15,6 +16,8 @@ use gtk4::Scale;
 use gtk4::Switch;
 use gtk4::prelude::*;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::ScaleFactor;
+use smearor_wrot_rotation::AnimationKind;
 use smearor_wrot_rotation::RotationControlHandler;
 use smearor_wrot_rotation::RotationWidget;
 use smearor_wrot_rotation::SmearorRotation;
@@ -93,6 +96,23 @@ fn build_ui(application: &Application) {
     let natural_child_switch = Switch::builder().active(false).halign(Align::Start).build();
     grid.attach(&natural_child_label, 0, 4, 1, 1);
     grid.attach(&natural_child_switch, 1, 4, 1, 1);
+
+    // Control: Animation Kind Dropdown
+    let animation_kind_label = Label::new(Some("Animation Type:"));
+    animation_kind_label.set_halign(Align::Start);
+    let animation_kind_dropdown = DropDown::from_strings(&["Rotation + Zoom", "Rotation only"]);
+    animation_kind_dropdown.set_selected(0);
+    grid.attach(&animation_kind_label, 0, 5, 1, 1);
+    grid.attach(&animation_kind_dropdown, 1, 5, 1, 1);
+
+    // Control: Zoom Depth Slider (scale at the dip of the three-phase zoom)
+    let zoom_label = Label::new(Some("Zoom Depth:"));
+    zoom_label.set_halign(Align::Start);
+    let zoom_scale = Scale::with_range(Orientation::Horizontal, 0.5, 1.0, 0.05);
+    zoom_scale.set_value(0.8);
+    zoom_scale.set_hexpand(true);
+    grid.attach(&zoom_label, 0, 6, 1, 1);
+    grid.attach(&zoom_scale, 1, 6, 1, 1);
 
     main_box.append(&grid);
 
@@ -214,6 +234,26 @@ fn build_ui(application: &Application) {
         move |scale| {
             let overshoot = scale.value();
             rotation_widget.set_animation_overshoot(overshoot);
+        }
+    ));
+
+    animation_kind_dropdown.connect_selected_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |dropdown| {
+            let kind = match dropdown.selected() {
+                1 => AnimationKind::Rotation,
+                _ => AnimationKind::RotationZoom,
+            };
+            rotation_widget.set_animation_kind(kind);
+        }
+    ));
+
+    zoom_scale.connect_value_changed(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |scale| {
+            rotation_widget.set_animation_zoom(ScaleFactor::new(scale.value()));
         }
     ));
 
