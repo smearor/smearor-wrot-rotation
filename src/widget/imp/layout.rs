@@ -61,7 +61,7 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
         };
         let rotation = self.rotation.get();
         let allocation = Size::new(width, height);
-        let center = allocation.to_f32() / 2.0;
+        let center = allocation.to_f32().half();
         let (_, child_nat) = c.measure_size();
         let target_size: Size<i32> = if self.natural_child_size.get() {
             // The child keeps its measured natural size: `measure`
