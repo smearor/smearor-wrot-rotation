@@ -8,10 +8,11 @@ use gtk4::gsk::Transform;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::layout_manager::LayoutManagerImpl;
 use gtk4::subclass::prelude::DerivedObjectProperties;
-use smearor_commons_geometry::Position;
+use smearor_commons_geometry::AspectRatio;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
 use smearor_commons_geometry::Size;
+use smearor_commons_geometry::WidgetSizeExt;
 use std::cell::Cell;
 use tracing::debug;
 use tracing::trace;
@@ -58,16 +59,14 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
             return;
         };
         let rotation = self.rotation.get();
-        let angle_deg = rotation.to_degrees_f32();
-        let current_scale = self.scale.get().as_f32();
-        let center = Position::<f32>::new(width as f32 / 2.0, height as f32 / 2.0);
-        let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
-        let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
+        let allocation = Size::new(width, height);
+        let center = allocation.to_f32() / 2.0;
+        let (_, child_nat) = c.measure_size();
         let target_size: Size<i32> = if self.natural_child_size.get() {
             // The child keeps its measured natural size: `measure`
             // reports the rotated bounding box, so the allocation
             // always contains the rotated child.
-            Size::new(child_nat_w, child_nat_h)
+            child_nat
         } else {
             // The child keeps its natural aspect ratio and is resized
             // to the largest rectangle whose rotated bounding box fits
@@ -76,14 +75,12 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
             // `unrotated_bounds` solve forced a bounds-fill aspect
             // onto the child, letterboxing aspect-fixed content such
             // as a wide image down to an invisible sliver.
-            let nat_aspect = if child_nat_w > 0 && child_nat_h > 0 {
-                f64::from(child_nat_w) / f64::from(child_nat_h)
-            } else {
-                1.0
-            };
-            Size::new(width, height).to_f64().unrotated_fit(nat_aspect, rotation).map(|v| v as i32)
+            let nat_aspect = child_nat.to_f64().aspect().unwrap_or(AspectRatio::ONE);
+            allocation.to_f64().unrotated_fit(nat_aspect, rotation).map(|v| v as i32)
         };
 
+        let angle_deg = rotation.to_degrees_f32();
+        let current_scale = self.scale.get().as_f32();
         let child_center = target_size.map(|v| v as f32 / -2.0);
         let transform = Transform::new()
             .translate(&center.into())
@@ -99,13 +96,12 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
         let rotation = self.rotation.get();
 
         if let Some(child) = widget.first_child() {
-            let (child_min_w, child_nat_w, _, _) = child.measure(Orientation::Horizontal, -1);
-            let (child_min_h, child_nat_h, _, _) = child.measure(Orientation::Vertical, -1);
-            trace!("child_min_w {child_min_w} child_nat_w {child_nat_w} child_min_h {child_min_h} child_nat_h {child_nat_h}");
+            let (child_min, child_nat) = child.measure_size();
+            trace!("child_min {child_min} child_nat {child_nat}");
 
             // Rotated bounding box of the child's natural and minimum size.
-            let min = Size::new(child_min_w, child_min_h).to_f64().rotated_bounds(rotation);
-            let nat = Size::new(child_nat_w, child_nat_h).to_f64().rotated_bounds(rotation);
+            let min = child_min.to_f64().rotated_bounds(rotation);
+            let nat = child_nat.to_f64().rotated_bounds(rotation);
             if orientation == Orientation::Horizontal {
                 (min.to_i32_ceil().x, nat.to_i32_ceil().x, -1, -1)
             } else {
