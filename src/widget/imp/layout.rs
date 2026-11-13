@@ -13,6 +13,7 @@ use smearor_commons_geometry::Position;
 use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
+use smearor_commons_geometry::Size;
 use smearor_commons_geometry::Vec2;
 use std::cell::Cell;
 use tracing::debug;
@@ -56,59 +57,58 @@ impl ObjectImpl for RotatedLayoutImpl {}
 
 impl LayoutManagerImpl for RotatedLayoutImpl {
     fn allocate(&self, widget: &gtk4::Widget, width: i32, height: i32, baseline: i32) {
-        let mut child = widget.first_child();
+        let Some(c) = widget.first_child().filter(|c| c.should_layout()) else {
+            return;
+        };
         let rotation = self.rotation.get();
         let angle_deg = rotation.to_degrees_f32();
         let current_scale = self.scale.get().as_f32();
         let (sin, cos) = rotation.sin_cos();
         let abs_cos = cos.abs();
         let abs_sin = sin.abs();
-        while let Some(ref c) = child {
-            if c.should_layout() {
-                let (target_child_w, target_child_h) = if self.natural_child_size.get() {
-                    // The child keeps its measured natural size: `measure`
-                    // reports the rotated bounding box, so the allocation
-                    // always contains the rotated child.
-                    let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
-                    let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
-                    (child_nat_w, child_nat_h)
-                } else {
-                    // `denom` is `cos(2θ)` and vanishes at 45° + k·90° - the
-                    // matrix singularity where no rotated child size can
-                    // reproduce a non-square allocation and the inverse
-                    // solve diverges. Blend quadratically from the solved
-                    // size at the band edge (`|denom| = 0.9`, continuous
-                    // with the pure solve outside) down to the square fit
-                    // at the singularity; a hard switch jumped the child
-                    // size whenever `|denom|` crossed the threshold.
-                    let denom = abs_cos * abs_cos - abs_sin * abs_sin;
-                    let square_fit = width as f64 / (abs_cos + abs_sin);
-                    let blend = (denom.abs() / 0.9).min(1.0);
-                    let blend = blend * blend;
-                    if blend == 0.0 {
-                        let s = square_fit as i32;
-                        (s, s)
-                    } else {
-                        let solved_w = (width as f64 * abs_cos - height as f64 * abs_sin) / denom;
-                        let solved_h = (height as f64 * abs_cos - width as f64 * abs_sin) / denom;
-                        let blended = |solved: f64| (square_fit + (solved.max(0.0) - square_fit) * blend) as i32;
-                        (blended(solved_w), blended(solved_h))
-                    }
-                };
+        // `denom` is `cos(2θ)` and vanishes at 45° + k·90° - the
+        // matrix singularity where no rotated child size can
+        // reproduce a non-square allocation and the inverse
+        // solve diverges. Blend quadratically from the solved
+        // size at the band edge (`|denom| = 0.9`, continuous
+        // with the pure solve outside) down to the square fit
+        // at the singularity; a hard switch jumped the child
+        // size whenever `|denom|` crossed the threshold.
+        let denom = abs_cos * abs_cos - abs_sin * abs_sin;
+        let square_fit = width as f64 / (abs_cos + abs_sin);
+        let blend = (denom.abs() / 0.9).min(1.0);
+        let blend = blend * blend;
+        // The inverse-solve child size. At the singularity `denom` is 0
+        // and `solved` holds +-inf/NaN - `blend == 0.0` takes the
+        // square-fit branch and never reads it.
+        let solved = Vec2::new(
+            (width as f64 * abs_cos - height as f64 * abs_sin) / denom,
+            (height as f64 * abs_cos - width as f64 * abs_sin) / denom,
+        );
+        let center = Position::<f32>::new(width as f32 / 2.0, height as f32 / 2.0);
+        let target_size: Size<i32> = if self.natural_child_size.get() {
+            // The child keeps its measured natural size: `measure`
+            // reports the rotated bounding box, so the allocation
+            // always contains the rotated child.
+            let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
+            let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
+            Size::new(child_nat_w, child_nat_h)
+        } else if blend == 0.0 {
+            let s = square_fit as i32;
+            Size::new(s, s)
+        } else {
+            solved.map(|v| (square_fit + (v.max(0.0) - square_fit) * blend) as i32)
+        };
 
-                let center = Position::<f32>::new(width as f32 / 2.0, height as f32 / 2.0);
-                let child_center = Position::<f32>::new(target_child_w as f32 / -2.0, target_child_h as f32 / -2.0);
-                let transform = Transform::new()
-                    .translate(&center.into())
-                    .rotate(angle_deg)
-                    .scale(current_scale, current_scale)
-                    .translate(&child_center.into());
+        let child_center = target_size.map(|v| v as f32 / -2.0);
+        let transform = Transform::new()
+            .translate(&center.into())
+            .rotate(angle_deg)
+            .scale(current_scale, current_scale)
+            .translate(&child_center.into());
 
-                trace!("width {target_child_w} height {target_child_h} baseline {baseline} transform {transform:?}");
-                c.allocate(target_child_w, target_child_h, baseline, Some(transform));
-            }
-            child = c.next_sibling();
-        }
+        trace!("size {target_size} baseline {baseline} transform {transform:?}");
+        c.allocate(target_size.x, target_size.y, baseline, Some(transform));
     }
 
     fn measure(&self, widget: &gtk4::Widget, orientation: Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
