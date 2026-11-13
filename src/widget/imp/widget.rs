@@ -26,6 +26,7 @@ use smearor_commons_geometry::Position;
 use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
+use smearor_commons_geometry::Vec2;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -114,7 +115,7 @@ impl ObjectImpl for RotationWidgetImpl {
                 }
             };
 
-            *initial_rotation_clone.borrow_mut() = layout.imp().rotation.get();
+            *initial_rotation_clone.borrow_mut() = layout.imp().rotation.get().to_degrees_f32();
             *total_angle_delta_clone.borrow_mut() = 0.0;
             *last_angle_clone.borrow_mut() = 0.0;
             *feedback_rotation_clone.borrow_mut() = 0.0;
@@ -193,10 +194,10 @@ impl ObjectImpl for RotationWidgetImpl {
                     }
                 };
 
-                let current_rotation = layout.imp().rotation.get();
+                let current_rotation = layout.imp().rotation.get().to_degrees_f32();
                 let new_rotation = current_rotation + feedback_amount as f32;
                 debug!("Applying feedback: current_rotation {} -> new_rotation {}", current_rotation, new_rotation);
-                layout.imp().rotation.set(new_rotation);
+                layout.imp().rotation.set(RotationRad::from_degrees(new_rotation));
                 widget_clone.queue_allocate();
                 debug!("Applied feedback rotation: {} degrees", feedback_amount);
             }
@@ -222,7 +223,7 @@ impl ObjectImpl for RotationWidgetImpl {
                 }
             };
 
-            let current_rotation = layout.imp().rotation.get();
+            let current_rotation = layout.imp().rotation.get().to_degrees_f32();
             let initial_rot = *initial_rotation_clone.borrow();
 
             // Find next standard rotation based on direction
@@ -273,7 +274,7 @@ impl ObjectImpl for RotationWidgetImpl {
                     Err(_) => return,
                 };
 
-                layout.imp().rotation.set(final_rotation);
+                layout.imp().rotation.set(RotationRad::from_degrees(final_rotation));
                 widget_clone.queue_allocate();
                 *rotation_applied_clone.borrow_mut() = true;
                 return;
@@ -309,16 +310,16 @@ impl ObjectImpl for RotationWidgetImpl {
                     };
 
                     // Apply rotation
-                    layout.imp().rotation.set(values.rotation.to_degrees_f32());
+                    layout.imp().rotation.set(values.rotation);
 
                     // Apply scale using transform matrix instead of CSS
-                    layout.imp().scale.set(values.scale.as_f32());
+                    layout.imp().scale.set(values.scale);
 
                     widget.queue_allocate();
 
                     if anim.is_complete() {
                         // Reset scale to 1.0 after animation completes
-                        layout.imp().scale.set(1.0);
+                        layout.imp().scale.set(ScaleFactor::ONE);
                         ControlFlow::Break
                     } else {
                         ControlFlow::Continue
@@ -351,7 +352,7 @@ impl ObjectImpl for RotationWidgetImpl {
                 };
 
                 let initial_rot = *initial_rotation_clone.borrow();
-                layout.imp().rotation.set(initial_rot);
+                layout.imp().rotation.set(RotationRad::from_degrees(initial_rot));
                 widget_clone.queue_allocate();
                 debug!("Reset to initial rotation {initial_rot} because threshold was not reached");
             }
@@ -379,9 +380,9 @@ impl WidgetImpl for RotationWidgetImpl {
                 .layout_manager()
                 .and_then(|lm| lm.downcast::<RotatedLayout>().ok())
                 .map(|rl| rl.imp().rotation.get())
-                .unwrap_or(0.0);
-            let region = Rect::<Pixels>::from_xywh(0.0, 0.0, width as f64, height as f64)
-                .rotated_region(RotationRad::from_degrees(angle))
+                .unwrap_or(RotationRad::ZERO);
+            let region = Rect::<Pixels>::new(Vec2::ZERO, Vec2::new(width, height).to_f64())
+                .rotated_region(angle)
                 .unwrap_or_else(|e| {
                     error!("Failed to build rotated input region: {}", e);
                     Region::create()

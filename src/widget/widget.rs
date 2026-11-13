@@ -165,7 +165,7 @@ impl RotationWidget {
                 }
             };
 
-            layout.imp().rotation.set(new_rotation.to_degrees_f32());
+            layout.imp().rotation.set(new_rotation);
             self.queue_allocate();
             return;
         }
@@ -223,16 +223,16 @@ impl RotationWidget {
                 };
 
                 // Apply rotation
-                layout.imp().rotation.set(values.rotation.to_degrees_f32());
+                layout.imp().rotation.set(values.rotation);
 
                 // Apply scale using transform matrix instead of CSS
-                layout.imp().scale.set(values.scale.as_f32());
+                layout.imp().scale.set(values.scale);
 
                 widget.queue_allocate();
 
                 if anim.is_complete() {
                     // Reset scale to 1.0 after animation completes
-                    layout.imp().scale.set(1.0);
+                    layout.imp().scale.set(ScaleFactor::ONE);
                     glib::ControlFlow::Break
                 } else {
                     glib::ControlFlow::Continue

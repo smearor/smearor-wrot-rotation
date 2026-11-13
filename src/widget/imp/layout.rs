@@ -12,6 +12,7 @@ use gtk4::subclass::prelude::DerivedObjectProperties;
 use smearor_commons_geometry::Pixels;
 use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::ScaleFactor;
 use std::cell::Cell;
 use tracing::debug;
 use tracing::trace;
@@ -20,9 +21,9 @@ use tracing::trace;
 #[properties(wrapper_type = RotatedLayout)]
 pub struct RotatedLayoutImpl {
     #[properties(get, set, notify)]
-    pub rotation: Cell<f32>,
+    pub rotation: Cell<RotationRad>,
     #[properties(get, set, notify)]
-    pub scale: Cell<f32>,
+    pub scale: Cell<ScaleFactor>,
     /// When `true`, the child is allocated its measured natural size instead
     /// of solving which rotated child size reproduces the allocation. The
     /// inverse solve is ill-conditioned near 45 degrees (and symmetric bands),
@@ -35,8 +36,8 @@ pub struct RotatedLayoutImpl {
 impl Default for RotatedLayoutImpl {
     fn default() -> Self {
         Self {
-            rotation: Cell::new(0.0),
-            scale: Cell::new(1.0),
+            rotation: Cell::new(RotationRad::ZERO),
+            scale: Cell::new(ScaleFactor::ONE),
             natural_child_size: Cell::new(false),
         }
     }
@@ -55,8 +56,8 @@ impl ObjectImpl for RotatedLayoutImpl {}
 impl LayoutManagerImpl for RotatedLayoutImpl {
     fn allocate(&self, widget: &gtk4::Widget, width: i32, height: i32, baseline: i32) {
         let mut child = widget.first_child();
-        let angle_deg = self.rotation.get();
-        let current_scale = self.scale.get();
+        let angle_deg = self.rotation.get().to_degrees_f32();
+        let current_scale = self.scale.get().as_f32();
         let angle_rad = angle_deg.to_radians();
         let abs_cos = angle_rad.cos().abs();
         let abs_sin = angle_rad.sin().abs();
@@ -107,7 +108,7 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
     }
 
     fn measure(&self, widget: &gtk4::Widget, orientation: Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
-        let rotation = RotationRad::from_degrees(self.rotation.get());
+        let rotation = self.rotation.get();
 
         if let Some(child) = widget.first_child() {
             let (child_min_w, child_nat_w, _, _) = child.measure(Orientation::Horizontal, -1);
