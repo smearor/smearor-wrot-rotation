@@ -4,15 +4,16 @@ use glib::subclass::prelude::ObjectSubclass;
 use gtk4::LayoutManager;
 use gtk4::Orientation;
 use gtk4::glib::Properties;
-use gtk4::graphene::Point;
 use gtk4::gsk::Transform;
 use gtk4::prelude::WidgetExt;
 use gtk4::subclass::layout_manager::LayoutManagerImpl;
 use gtk4::subclass::prelude::DerivedObjectProperties;
 use smearor_commons_geometry::Pixels;
+use smearor_commons_geometry::Position;
 use smearor_commons_geometry::Rect;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
+use smearor_commons_geometry::Vec2;
 use std::cell::Cell;
 use tracing::debug;
 use tracing::trace;
@@ -56,11 +57,12 @@ impl ObjectImpl for RotatedLayoutImpl {}
 impl LayoutManagerImpl for RotatedLayoutImpl {
     fn allocate(&self, widget: &gtk4::Widget, width: i32, height: i32, baseline: i32) {
         let mut child = widget.first_child();
-        let angle_deg = self.rotation.get().to_degrees_f32();
+        let rotation = self.rotation.get();
+        let angle_deg = rotation.to_degrees_f32();
         let current_scale = self.scale.get().as_f32();
-        let angle_rad = angle_deg.to_radians();
-        let abs_cos = angle_rad.cos().abs();
-        let abs_sin = angle_rad.sin().abs();
+        let (sin, cos) = rotation.sin_cos();
+        let abs_cos = cos.abs();
+        let abs_sin = sin.abs();
         while let Some(ref c) = child {
             if c.should_layout() {
                 let (target_child_w, target_child_h) = if self.natural_child_size.get() {
@@ -80,25 +82,27 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
                     // at the singularity; a hard switch jumped the child
                     // size whenever `|denom|` crossed the threshold.
                     let denom = abs_cos * abs_cos - abs_sin * abs_sin;
-                    let square_fit = width as f32 / (abs_cos + abs_sin);
+                    let square_fit = width as f64 / (abs_cos + abs_sin);
                     let blend = (denom.abs() / 0.9).min(1.0);
                     let blend = blend * blend;
                     if blend == 0.0 {
                         let s = square_fit as i32;
                         (s, s)
                     } else {
-                        let solved_w = (width as f32 * abs_cos - height as f32 * abs_sin) / denom;
-                        let solved_h = (height as f32 * abs_cos - width as f32 * abs_sin) / denom;
-                        let blended = |solved: f32| (square_fit + (solved.max(0.0) - square_fit) * blend) as i32;
+                        let solved_w = (width as f64 * abs_cos - height as f64 * abs_sin) / denom;
+                        let solved_h = (height as f64 * abs_cos - width as f64 * abs_sin) / denom;
+                        let blended = |solved: f64| (square_fit + (solved.max(0.0) - square_fit) * blend) as i32;
                         (blended(solved_w), blended(solved_h))
                     }
                 };
 
+                let center = Position::<f32>::new(width as f32 / 2.0, height as f32 / 2.0);
+                let child_center = Position::<f32>::new(target_child_w as f32 / -2.0, target_child_h as f32 / -2.0);
                 let transform = Transform::new()
-                    .translate(&Point::new(width as f32 / 2.0, height as f32 / 2.0))
+                    .translate(&center.into())
                     .rotate(angle_deg)
                     .scale(current_scale, current_scale)
-                    .translate(&Point::new(target_child_w as f32 / -2.0, target_child_h as f32 / -2.0));
+                    .translate(&child_center.into());
 
                 trace!("width {target_child_w} height {target_child_h} baseline {baseline} transform {transform:?}");
                 c.allocate(target_child_w, target_child_h, baseline, Some(transform));
@@ -116,8 +120,8 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
             trace!("child_min_w {child_min_w} child_nat_w {child_nat_w} child_min_h {child_min_h} child_nat_h {child_nat_h}");
 
             // Rotated bounding box of the child's natural and minimum size.
-            let min = Rect::<Pixels>::from_xywh(0.0, 0.0, child_min_w as f64, child_min_h as f64).rotated_bounds(rotation);
-            let nat = Rect::<Pixels>::from_xywh(0.0, 0.0, child_nat_w as f64, child_nat_h as f64).rotated_bounds(rotation);
+            let min = Rect::<Pixels>::new(Vec2::ZERO, Vec2::new(child_min_w, child_min_h).to_f64()).rotated_bounds(rotation);
+            let nat = Rect::<Pixels>::new(Vec2::ZERO, Vec2::new(child_nat_w, child_nat_h).to_f64()).rotated_bounds(rotation);
             if orientation == Orientation::Horizontal {
                 (min.to_i32_ceil().x, nat.to_i32_ceil().x, -1, -1)
             } else {
