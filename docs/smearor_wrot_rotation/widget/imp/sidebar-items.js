@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["layout","region","widget"]};
+window.SIDEBAR_ITEMS = {"mod":["layout","widget"]};

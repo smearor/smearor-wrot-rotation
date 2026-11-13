@@ -165,7 +165,7 @@
 <a href=#165 id=165 data-nosnippet>165</a>                }
 <a href=#166 id=166 data-nosnippet>166</a>            };
 <a href=#167 id=167 data-nosnippet>167</a>
-<a href=#168 id=168 data-nosnippet>168</a>            layout.imp().rotation.set(new_rotation.to_degrees() <span class="kw">as </span>f32);
+<a href=#168 id=168 data-nosnippet>168</a>            layout.imp().rotation.set(new_rotation);
 <a href=#169 id=169 data-nosnippet>169</a>            <span class="self">self</span>.queue_allocate();
 <a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">return</span>;
 <a href=#171 id=171 data-nosnippet>171</a>        }
@@ -194,7 +194,7 @@
 <a href=#194 id=194 data-nosnippet>194</a>        // 33-66%: Rotation without zoom (scale 0.9 -&gt; 0.9)
 <a href=#195 id=195 data-nosnippet>195</a>        // 66-100%: Rotation and zoom in (scale 0.9 -&gt; 1.0)
 <a href=#196 id=196 data-nosnippet>196</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>animation = RotationZoomAnimation::new(
-<a href=#197 id=197 data-nosnippet>197</a>            RotationRad::from_degrees(current_rotation <span class="kw">as </span>f64),
+<a href=#197 id=197 data-nosnippet>197</a>            current_rotation,
 <a href=#198 id=198 data-nosnippet>198</a>            new_rotation,
 <a href=#199 id=199 data-nosnippet>199</a>            ScaleFactor::ONE,
 <a href=#200 id=200 data-nosnippet>200</a>            ScaleFactor::new(<span class="number">0.8</span>),
@@ -223,16 +223,16 @@
 <a href=#223 id=223 data-nosnippet>223</a>                };
 <a href=#224 id=224 data-nosnippet>224</a>
 <a href=#225 id=225 data-nosnippet>225</a>                <span class="comment">// Apply rotation
-<a href=#226 id=226 data-nosnippet>226</a>                </span>layout.imp().rotation.set(values.rotation.to_degrees() <span class="kw">as </span>f32);
+<a href=#226 id=226 data-nosnippet>226</a>                </span>layout.imp().rotation.set(values.rotation);
 <a href=#227 id=227 data-nosnippet>227</a>
 <a href=#228 id=228 data-nosnippet>228</a>                <span class="comment">// Apply scale using transform matrix instead of CSS
-<a href=#229 id=229 data-nosnippet>229</a>                </span>layout.imp().scale.set(values.scale.as_f64() <span class="kw">as </span>f32);
+<a href=#229 id=229 data-nosnippet>229</a>                </span>layout.imp().scale.set(values.scale);
 <a href=#230 id=230 data-nosnippet>230</a>
 <a href=#231 id=231 data-nosnippet>231</a>                widget.queue_allocate();
 <a href=#232 id=232 data-nosnippet>232</a>
 <a href=#233 id=233 data-nosnippet>233</a>                <span class="kw">if </span>anim.is_complete() {
 <a href=#234 id=234 data-nosnippet>234</a>                    <span class="comment">// Reset scale to 1.0 after animation completes
-<a href=#235 id=235 data-nosnippet>235</a>                    </span>layout.imp().scale.set(<span class="number">1.0</span>);
+<a href=#235 id=235 data-nosnippet>235</a>                    </span>layout.imp().scale.set(ScaleFactor::ONE);
 <a href=#236 id=236 data-nosnippet>236</a>                    glib::ControlFlow::Break
 <a href=#237 id=237 data-nosnippet>237</a>                } <span class="kw">else </span>{
 <a href=#238 id=238 data-nosnippet>238</a>                    glib::ControlFlow::Continue

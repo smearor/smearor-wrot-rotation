@@ -30,14 +30,14 @@
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="doccomment">/// Creates a rotation from a degree value, snapping to the
 <a href=#32 id=32 data-nosnippet>32</a>    /// quarter-turn variants for exactly `0`, `90`, `180` or `270`.
-<a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">pub fn </span>new(degrees: f32) -&gt; <span class="self">Self </span>{
-<a href=#34 id=34 data-nosnippet>34</a>        <span class="self">Self</span>(Rotation::from_degrees(degrees <span class="kw">as </span>f64))
+<a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">pub fn </span>new(degrees: <span class="kw">impl </span>Into&lt;f64&gt;) -&gt; <span class="self">Self </span>{
+<a href=#34 id=34 data-nosnippet>34</a>        <span class="self">Self</span>(Rotation::from_degrees(degrees))
 <a href=#35 id=35 data-nosnippet>35</a>    }
 <a href=#36 id=36 data-nosnippet>36</a>
 <a href=#37 id=37 data-nosnippet>37</a>    <span class="doccomment">/// Creates a free (non-snapped) rotation - a degree value of `90.0`
 <a href=#38 id=38 data-nosnippet>38</a>    /// stays free and does not become [`Self::DEG_90`].
-<a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">pub fn </span>free(degrees: f32) -&gt; <span class="self">Self </span>{
-<a href=#40 id=40 data-nosnippet>40</a>        <span class="self">Self</span>(Rotation::Free(RotationRad::from_degrees(degrees <span class="kw">as </span>f64)))
+<a href=#39 id=39 data-nosnippet>39</a>    </span><span class="kw">pub fn </span>free(degrees: <span class="kw">impl </span>Into&lt;f64&gt;) -&gt; <span class="self">Self </span>{
+<a href=#40 id=40 data-nosnippet>40</a>        <span class="self">Self</span>(Rotation::Free(RotationRad::from_degrees(degrees)))
 <a href=#41 id=41 data-nosnippet>41</a>    }
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="doccomment">/// The rotation angle in degrees for the GTK boundary.
