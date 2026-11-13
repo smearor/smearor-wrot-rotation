@@ -68,29 +68,43 @@ impl LayoutManagerImpl for RotatedLayoutImpl {
         // reproduce a non-square allocation and the inverse
         // solve diverges. Blend quadratically from the solved
         // size at the band edge (`|denom| = 0.9`, continuous
-        // with the pure solve outside) down to the square fit
+        // with the pure solve outside) down to the inscribed fit
         // at the singularity; a hard switch jumped the child
         // size whenever `|denom|` crossed the threshold.
         let denom = abs_cos * abs_cos - abs_sin * abs_sin;
-        let square_fit = width as f64 / (abs_cos + abs_sin);
         let blend = (denom.abs() / 0.9).min(1.0);
         let blend = blend * blend;
+        let allocation = Size::new(width, height).to_f64();
         // At the singularity `unrotated_bounds` holds +-inf/NaN -
-        // `blend == 0.0` takes the square-fit branch and never reads it.
-        let solved = Size::new(width, height).to_f64().unrotated_bounds(rotation);
+        // `blend == 0.0` takes the inscribed-fit branch below and
+        // never reads it.
+        let solved = allocation.unrotated_bounds(rotation);
+        // The child's natural aspect drives the inscribed fit, so
+        // the fallback keeps the content's proportions.
+        let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
+        let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
+        let nat_aspect = if child_nat_w > 0 && child_nat_h > 0 {
+            f64::from(child_nat_w) / f64::from(child_nat_h)
+        } else {
+            1.0
+        };
+        let fit = allocation.unrotated_fit(nat_aspect, rotation);
         let center = Position::<f32>::new(width as f32 / 2.0, height as f32 / 2.0);
         let target_size: Size<i32> = if self.natural_child_size.get() {
             // The child keeps its measured natural size: `measure`
             // reports the rotated bounding box, so the allocation
             // always contains the rotated child.
-            let (_, child_nat_w, _, _) = c.measure(Orientation::Horizontal, -1);
-            let (_, child_nat_h, _, _) = c.measure(Orientation::Vertical, -1);
             Size::new(child_nat_w, child_nat_h)
-        } else if blend == 0.0 {
-            let s = square_fit as i32;
-            Size::new(s, s)
+        } else if blend == 0.0 || solved.x <= 0.0 || solved.y <= 0.0 {
+            // `blend == 0` is the matrix singularity; a non-positive
+            // solved component means no rectangle rotated by this
+            // angle can fill the allocation (the achievable bounds
+            // aspect is bounded by [tan θ, cot θ]). In both cases the
+            // largest inscribed child of natural aspect is bounded
+            // and keeps the content visible.
+            fit.map(|v| v as i32)
         } else {
-            solved.map(|v| (square_fit + (v.max(0.0) - square_fit) * blend) as i32)
+            Size::new(fit.x + (solved.x - fit.x) * blend, fit.y + (solved.y - fit.y) * blend).map(|v| v as i32)
         };
 
         let child_center = target_size.map(|v| v as f32 / -2.0);
