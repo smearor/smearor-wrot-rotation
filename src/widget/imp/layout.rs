@@ -25,9 +25,11 @@ pub struct RotatedLayoutImpl {
     pub scale: Cell<ScaleFactor>,
     /// When `true`, the child is allocated its measured natural size instead
     /// of solving which rotated child size reproduces the allocation. The
-    /// inverse solve is ill-conditioned near 45 degrees (and symmetric bands),
-    /// where it shrinks non-square children into a square. Defaults to
-    /// `false` to preserve the legacy allocation behavior.
+    /// inverse solve diverges at `45° + k·90°` and returns non-positive
+    /// components when the allocation aspect lies outside `[tan θ, cot θ]`;
+    /// both cases fall back to the largest inscribed child of natural
+    /// aspect. Defaults to `false` to preserve the legacy allocation
+    /// behavior.
     #[properties(get, set, notify)]
     pub natural_child_size: Cell<bool>,
 }
