@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["DerivedPropertiesEnum"],"struct":["RotatedLayoutImpl"]};
+window.SIDEBAR_ITEMS = {"mod":["prop"],"struct":["RotatedLayoutImpl"]};
