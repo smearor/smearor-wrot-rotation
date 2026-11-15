@@ -104,6 +104,33 @@ impl RotationWidget {
         self
     }
 
+    /// Applies a rotation value to the layout, emitting `notify::rotation`
+    /// and invalidating the measure chain. Rotation changes the rotated
+    /// bounding box the widget requests, so a plain `queue_allocate` would
+    /// leave parents allocating at the stale unrotated extent while the
+    /// transform already renders the new rotation off-center.
+    pub(crate) fn set_layout_rotation(&self, layout: &RotatedLayout, rotation: RotationRad) {
+        if layout.imp().rotation.get() == rotation {
+            return;
+        }
+        layout.imp().rotation.set(rotation);
+        layout.notify("rotation");
+        layout.layout_changed();
+        self.queue_resize();
+    }
+
+    /// Applies a scale value to the layout, emitting `notify::scale`.
+    /// Scale does not affect the measured size, so a re-allocation of the
+    /// child with the updated transform is sufficient.
+    pub(crate) fn set_layout_scale(&self, layout: &RotatedLayout, scale: ScaleFactor) {
+        if layout.imp().scale.get() == scale {
+            return;
+        }
+        layout.imp().scale.set(scale);
+        layout.notify("scale");
+        self.queue_allocate();
+    }
+
     /// Enables or disables natural child size allocation. Defaults to
     /// `false`.
     ///
@@ -121,8 +148,10 @@ impl RotationWidget {
             error!("Layout manager is not RotatedLayout in set_natural_child_size_enabled");
             return;
         };
-        rotated_layout.imp().natural_child_size.set(enabled);
-        self.queue_allocate();
+        if rotated_layout.imp().natural_child_size.replace(enabled) != enabled {
+            rotated_layout.notify("natural-child-size");
+            self.queue_allocate();
+        }
     }
 
     /// Whether the child is allocated its measured natural size.
@@ -199,8 +228,7 @@ impl RotationWidget {
                 }
             };
 
-            layout.imp().rotation.set(new_rotation);
-            self.queue_allocate();
+            self.set_layout_rotation(&layout, new_rotation);
             return;
         }
 
@@ -254,9 +282,8 @@ impl RotationWidget {
                     let Ok(layout) = layout.downcast::<RotatedLayout>() else {
                         return glib::ControlFlow::Continue;
                     };
-                    layout.imp().rotation.set(rotation);
-                    layout.imp().scale.set(scale);
-                    widget.queue_allocate();
+                    widget.set_layout_rotation(&layout, rotation);
+                    widget.set_layout_scale(&layout, scale);
                     glib::ControlFlow::Continue
                 });
             }
@@ -271,8 +298,7 @@ impl RotationWidget {
                     let Ok(layout) = layout.downcast::<RotatedLayout>() else {
                         return glib::ControlFlow::Continue;
                     };
-                    layout.imp().rotation.set(rotation);
-                    widget.queue_allocate();
+                    widget.set_layout_rotation(&layout, rotation);
                     glib::ControlFlow::Continue
                 });
             }
@@ -288,10 +314,10 @@ impl RotationWidget {
             let widget_clone_width = self.clone();
             let widget_clone_height = self.clone();
             new_child.connect_notify_local(Some("width-request"), move |_child, _param| {
-                widget_clone_width.queue_allocate();
+                widget_clone_width.queue_resize();
             });
             new_child.connect_notify_local(Some("height-request"), move |_child, _param| {
-                widget_clone_height.queue_allocate();
+                widget_clone_height.queue_resize();
             });
             new_child.set_parent(self);
             *self_child = Some(new_child.clone().upcast());

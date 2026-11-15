@@ -208,8 +208,7 @@ impl ObjectImpl for RotationWidgetImpl {
                 let current_rotation = layout.imp().rotation.get().to_degrees_f32();
                 let new_rotation = current_rotation + feedback_amount as f32;
                 debug!("Applying feedback: current_rotation {} -> new_rotation {}", current_rotation, new_rotation);
-                layout.imp().rotation.set(RotationRad::from_degrees(new_rotation));
-                widget_clone.queue_allocate();
+                widget_clone.set_layout_rotation(&layout, RotationRad::from_degrees(new_rotation));
                 debug!("Applied feedback rotation: {} degrees", feedback_amount);
             }
 
@@ -285,8 +284,7 @@ impl ObjectImpl for RotationWidgetImpl {
                     Err(_) => return,
                 };
 
-                layout.imp().rotation.set(RotationRad::from_degrees(final_rotation));
-                widget_clone.queue_allocate();
+                widget_clone.set_layout_rotation(&layout, RotationRad::from_degrees(final_rotation));
                 *rotation_applied_clone.borrow_mut() = true;
                 return;
             }
@@ -318,9 +316,8 @@ impl ObjectImpl for RotationWidgetImpl {
                 let Ok(layout) = layout.downcast::<RotatedLayout>() else {
                     return ControlFlow::Continue;
                 };
-                layout.imp().rotation.set(rotation);
-                layout.imp().scale.set(scale);
-                widget.queue_allocate();
+                widget.set_layout_rotation(&layout, rotation);
+                widget.set_layout_scale(&layout, scale);
                 ControlFlow::Continue
             });
 
@@ -347,8 +344,7 @@ impl ObjectImpl for RotationWidgetImpl {
                 };
 
                 let initial_rot = *initial_rotation_clone.borrow();
-                layout.imp().rotation.set(RotationRad::from_degrees(initial_rot));
-                widget_clone.queue_allocate();
+                widget_clone.set_layout_rotation(&layout, RotationRad::from_degrees(initial_rot));
                 debug!("Reset to initial rotation {initial_rot} because threshold was not reached");
             }
         });

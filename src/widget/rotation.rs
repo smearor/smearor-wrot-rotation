@@ -25,8 +25,7 @@ impl RotationControlHandler for RotationWidget {
             error!("Layout manager is not RotatedLayout in set_rotation");
             return;
         };
-        layout.imp().rotation.set(rotation.into());
-        self.queue_allocate();
+        self.set_layout_rotation(&layout, rotation.into());
     }
 
     fn rotation(&self) -> RotationRad {
