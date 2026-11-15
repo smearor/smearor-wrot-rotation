@@ -97,13 +97,20 @@ fn build_ui(application: &Application) {
     grid.attach(&natural_child_label, 0, 4, 1, 1);
     grid.attach(&natural_child_switch, 1, 4, 1, 1);
 
+    // Control: Measure Rotated Bounds Switch (viewport follows rotation)
+    let measure_rotated_label = Label::new(Some("Measure Rotated Bounds:"));
+    measure_rotated_label.set_halign(Align::Start);
+    let measure_rotated_switch = Switch::builder().active(true).halign(Align::Start).build();
+    grid.attach(&measure_rotated_label, 0, 5, 1, 1);
+    grid.attach(&measure_rotated_switch, 1, 5, 1, 1);
+
     // Control: Animation Kind Dropdown
     let animation_kind_label = Label::new(Some("Animation Type:"));
     animation_kind_label.set_halign(Align::Start);
     let animation_kind_dropdown = DropDown::from_strings(&["Rotation + Zoom", "Rotation only"]);
     animation_kind_dropdown.set_selected(0);
-    grid.attach(&animation_kind_label, 0, 5, 1, 1);
-    grid.attach(&animation_kind_dropdown, 1, 5, 1, 1);
+    grid.attach(&animation_kind_label, 0, 6, 1, 1);
+    grid.attach(&animation_kind_dropdown, 1, 6, 1, 1);
 
     // Control: Zoom Depth Slider (scale at the dip of the three-phase zoom)
     let zoom_label = Label::new(Some("Zoom Depth:"));
@@ -111,8 +118,8 @@ fn build_ui(application: &Application) {
     let zoom_scale = Scale::with_range(Orientation::Horizontal, 0.5, 1.0, 0.05);
     zoom_scale.set_value(0.8);
     zoom_scale.set_hexpand(true);
-    grid.attach(&zoom_label, 0, 6, 1, 1);
-    grid.attach(&zoom_scale, 1, 6, 1, 1);
+    grid.attach(&zoom_label, 0, 7, 1, 1);
+    grid.attach(&zoom_scale, 1, 7, 1, 1);
 
     main_box.append(&grid);
 
@@ -270,6 +277,14 @@ fn build_ui(application: &Application) {
         rotation_widget,
         move |switch| {
             rotation_widget.set_natural_child_size_enabled(switch.is_active());
+        }
+    ));
+
+    measure_rotated_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |switch| {
+            rotation_widget.set_measure_rotated_bounds_enabled(switch.is_active());
         }
     ));
 

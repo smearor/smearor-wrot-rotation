@@ -78,6 +78,13 @@ fn build_ui(application: &Application) {
     outer_grid.attach(&outer_natural_label, 0, 2, 1, 1);
     outer_grid.attach(&outer_natural_switch, 1, 2, 1, 1);
 
+    // Control: Outer Measure Rotated Bounds Switch
+    let outer_measure_rotated_label = Label::new(Some("Outer Measure Rotated Bounds:"));
+    outer_measure_rotated_label.set_halign(Align::Start);
+    let outer_measure_rotated_switch = Switch::builder().active(true).halign(Align::Start).build();
+    outer_grid.attach(&outer_measure_rotated_label, 0, 3, 1, 1);
+    outer_grid.attach(&outer_measure_rotated_switch, 1, 3, 1, 1);
+
     main_box.append(&outer_grid);
 
     // Quick Snap Buttons for outer widget
@@ -136,6 +143,13 @@ fn build_ui(application: &Application) {
     let inner_natural_switch = Switch::builder().active(false).halign(Align::Start).build();
     inner_grid.attach(&inner_natural_label, 0, 2, 1, 1);
     inner_grid.attach(&inner_natural_switch, 1, 2, 1, 1);
+
+    // Control: Inner Measure Rotated Bounds Switch
+    let inner_measure_rotated_label = Label::new(Some("Inner Measure Rotated Bounds:"));
+    inner_measure_rotated_label.set_halign(Align::Start);
+    let inner_measure_rotated_switch = Switch::builder().active(true).halign(Align::Start).build();
+    inner_grid.attach(&inner_measure_rotated_label, 0, 3, 1, 1);
+    inner_grid.attach(&inner_measure_rotated_switch, 1, 3, 1, 1);
 
     // Inner angle label and manual slider (also inside the outer rotation)
     let inner_angle_label = Label::builder().label("Inner Angle: 0.00°").margin_top(4).build();
@@ -292,6 +306,14 @@ fn build_ui(application: &Application) {
         }
     ));
 
+    outer_measure_rotated_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        outer_rotation_widget,
+        move |switch| {
+            outer_rotation_widget.set_measure_rotated_bounds_enabled(switch.is_active());
+        }
+    ));
+
     // Connect inner control switches
     inner_anim_switch.connect_active_notify(glib::clone!(
         #[weak]
@@ -314,6 +336,14 @@ fn build_ui(application: &Application) {
         inner_rotation_widget,
         move |switch| {
             inner_rotation_widget.set_natural_child_size_enabled(switch.is_active());
+        }
+    ));
+
+    inner_measure_rotated_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        inner_rotation_widget,
+        move |switch| {
+            inner_rotation_widget.set_measure_rotated_bounds_enabled(switch.is_active());
         }
     ));
 

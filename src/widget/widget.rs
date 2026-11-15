@@ -113,8 +113,10 @@ impl RotationWidget {
         if layout.imp().rotation.get() == rotation {
             return;
         }
-        layout.imp().rotation.set(rotation);
-        layout.notify("rotation");
+        // `set_property` goes through the registered property and emits
+        // `notify::rotation`, which lets consumers like the floating
+        // board re-center and re-clamp before the next measure pass.
+        layout.set_property("rotation", rotation.as_f64());
         layout.layout_changed();
         self.queue_resize();
     }
@@ -126,8 +128,7 @@ impl RotationWidget {
         if layout.imp().scale.get() == scale {
             return;
         }
-        layout.imp().scale.set(scale);
-        layout.notify("scale");
+        layout.set_property("scale", scale.as_f64());
         self.queue_allocate();
     }
 
@@ -148,10 +149,55 @@ impl RotationWidget {
             error!("Layout manager is not RotatedLayout in set_natural_child_size_enabled");
             return;
         };
-        if rotated_layout.imp().natural_child_size.replace(enabled) != enabled {
-            rotated_layout.notify("natural-child-size");
+        if rotated_layout.imp().natural_child_size.get() != enabled {
+            rotated_layout.set_property("natural-child-size", enabled);
             self.queue_allocate();
         }
+    }
+
+    /// Builder-style method to configure rotated-bounds measurement.
+    /// Defaults to `true` (the viewport follows the rotated bounding box).
+    pub fn with_measure_rotated_bounds_enabled(self, enabled: bool) -> Self {
+        self.set_measure_rotated_bounds_enabled(enabled);
+        self
+    }
+
+    /// Enables or disables rotated-bounds measurement. Defaults to `true`.
+    ///
+    /// Enabled, `measure` reports the rotated bounding box: the
+    /// allocation always contains the rotated child and the viewport
+    /// grows with rotation. Disabled, the widget requests its unrotated
+    /// size - the rotated child overflows the allocation symmetrically.
+    /// Combine with [`Self::set_natural_child_size_enabled`]: enabled
+    /// keeps the child at its natural size, disabled shrinks it via
+    /// `unrotated_fit` so it still fits rotated inside the fixed
+    /// viewport.
+    ///
+    /// Note: content outside the allocation is not hit-testable by
+    /// default - consumers that need picking in the overflow area must
+    /// override `contains` to map through the transform.
+    pub fn set_measure_rotated_bounds_enabled(&self, enabled: bool) {
+        let Some(layout) = self.layout_manager() else {
+            error!("Failed to get layout manager in set_measure_rotated_bounds_enabled");
+            return;
+        };
+        let Ok(rotated_layout) = layout.downcast::<RotatedLayout>() else {
+            error!("Layout manager is not RotatedLayout in set_measure_rotated_bounds_enabled");
+            return;
+        };
+        if rotated_layout.imp().measure_rotated_bounds.get() != enabled {
+            rotated_layout.set_property("measure-rotated-bounds", enabled);
+            rotated_layout.layout_changed();
+            self.queue_resize();
+        }
+    }
+
+    /// Whether the widget requests its rotated bounding box as size.
+    pub fn measure_rotated_bounds_enabled(&self) -> bool {
+        self.layout_manager()
+            .and_then(|layout| layout.downcast::<RotatedLayout>().ok())
+            .map(|rotated_layout| rotated_layout.imp().measure_rotated_bounds.get())
+            .unwrap_or(true)
     }
 
     /// Whether the child is allocated its measured natural size.
