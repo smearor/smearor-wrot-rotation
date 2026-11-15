@@ -658,7 +658,7 @@ checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
 [[package]]
 name = "smearor-commons-animation"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#4a364bae926c6ac21feb3f15571dc79be0124690"
+source = "git+https://github.com/smearor/smearor-commons.git#1e53f22f15499666f7a7595d210f2f7f9a809578"
 dependencies = [
  "gtk4",
  "serde",
@@ -668,7 +668,7 @@ dependencies = [
 [[package]]
 name = "smearor-commons-geometry"
 version = "0.1.0"
-source = "git+https://github.com/smearor/smearor-commons.git#4a364bae926c6ac21feb3f15571dc79be0124690"
+source = "git+https://github.com/smearor/smearor-commons.git#1e53f22f15499666f7a7595d210f2f7f9a809578"
 dependencies = [
  "cairo-rs",
  "gtk4",
