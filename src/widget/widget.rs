@@ -1,11 +1,13 @@
 use crate::AnimationKind;
 use crate::RotationControlHandler;
 use crate::rotation::SmearorRotation;
+use crate::widget::fill_strategy::FillStrategy;
 use crate::widget::imp::widget::RotationWidgetImpl;
 use crate::widget::layout::RotatedLayout;
 use gtk4::Accessible;
 use gtk4::Buildable;
 use gtk4::ConstraintTarget;
+use gtk4::Overflow;
 use gtk4::PropagationPhase;
 use gtk4::Widget;
 use gtk4::prelude::*;
@@ -153,6 +155,84 @@ impl RotationWidget {
             rotated_layout.set_property("natural-child-size", enabled);
             self.queue_allocate();
         }
+    }
+
+    /// Builder-style method to configure fill allocation. Defaults to
+    /// `false`.
+    pub fn with_fill_enabled(self, enabled: bool) -> Self {
+        self.set_fill_enabled(enabled);
+        self
+    }
+
+    /// Enables or disables fill allocation. Defaults to `false`.
+    ///
+    /// Enabled, the child is stretched to fill the whole allocation: it
+    /// is allocated the size whose rotated bounding box exactly equals
+    /// the allocation, so a surface-filling child covers the viewport
+    /// without letterboxing at any rotation. Takes precedence over
+    /// `natural_child_size`. Where the exact solve is infeasible the
+    /// [`FillStrategy`] selected by [`Self::set_fill_strategy`]
+    /// resolves the allocation.
+    ///
+    /// Enabling fill also sets `overflow: hidden`: cover strategies let
+    /// the child overhang the allocation on one axis, and the clip
+    /// keeps that overhang inside the widget bounds. Disabling
+    /// restores `overflow: visible`.
+    pub fn set_fill_enabled(&self, enabled: bool) {
+        let Some(layout) = self.layout_manager() else {
+            error!("Failed to get layout manager in set_fill_enabled");
+            return;
+        };
+        let Ok(rotated_layout) = layout.downcast::<RotatedLayout>() else {
+            error!("Layout manager is not RotatedLayout in set_fill_enabled");
+            return;
+        };
+        if rotated_layout.imp().fill.get() != enabled {
+            rotated_layout.set_property("fill", enabled);
+            self.set_overflow(if enabled { Overflow::Hidden } else { Overflow::Visible });
+            self.queue_allocate();
+        }
+    }
+
+    /// Whether the child is stretched to fill the whole allocation.
+    pub fn fill_enabled(&self) -> bool {
+        self.layout_manager()
+            .and_then(|layout| layout.downcast::<RotatedLayout>().ok())
+            .map(|rotated_layout| rotated_layout.imp().fill.get())
+            .unwrap_or(false)
+    }
+
+    /// Builder-style method to configure the fill fallback strategy.
+    /// Defaults to [`FillStrategy::Fit`].
+    pub fn with_fill_strategy(self, strategy: FillStrategy) -> Self {
+        self.set_fill_strategy(strategy);
+        self
+    }
+
+    /// Selects how `fill` resolves rotation angles where the exact
+    /// `unrotated_bounds` solve is infeasible - see [`FillStrategy`]
+    /// for the variants. Defaults to [`FillStrategy::Fit`].
+    pub fn set_fill_strategy(&self, strategy: FillStrategy) {
+        let Some(layout) = self.layout_manager() else {
+            error!("Failed to get layout manager in set_fill_strategy");
+            return;
+        };
+        let Ok(rotated_layout) = layout.downcast::<RotatedLayout>() else {
+            error!("Layout manager is not RotatedLayout in set_fill_strategy");
+            return;
+        };
+        if rotated_layout.imp().fill_strategy.get() != strategy {
+            rotated_layout.set_property("fill-strategy", strategy);
+            self.queue_allocate();
+        }
+    }
+
+    /// The fallback strategy `fill` uses where no exact solve exists.
+    pub fn fill_strategy(&self) -> FillStrategy {
+        self.layout_manager()
+            .and_then(|layout| layout.downcast::<RotatedLayout>().ok())
+            .map(|rotated_layout| rotated_layout.imp().fill_strategy.get())
+            .unwrap_or_default()
     }
 
     /// Builder-style method to configure rotated-bounds measurement.

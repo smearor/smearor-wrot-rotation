@@ -7,6 +7,7 @@ use gtk4::Align;
 use gtk4::Application;
 use gtk4::ApplicationWindow;
 use gtk4::Button;
+use gtk4::CssProvider;
 use gtk4::DropDown;
 use gtk4::Entry;
 use gtk4::Frame;
@@ -18,6 +19,7 @@ use gtk4::prelude::*;
 use smearor_commons_geometry::RotationRad;
 use smearor_commons_geometry::ScaleFactor;
 use smearor_wrot_rotation::AnimationKind;
+use smearor_wrot_rotation::FillStrategy;
 use smearor_wrot_rotation::RotationControlHandler;
 use smearor_wrot_rotation::RotationWidget;
 use smearor_wrot_rotation::SmearorRotation;
@@ -97,20 +99,35 @@ fn build_ui(application: &Application) {
     grid.attach(&natural_child_label, 0, 4, 1, 1);
     grid.attach(&natural_child_switch, 1, 4, 1, 1);
 
+    // Control: Fill Switch (child stretched so its rotated bounds fill the viewport)
+    let fill_label = Label::new(Some("Fill:"));
+    fill_label.set_halign(Align::Start);
+    let fill_switch = Switch::builder().active(false).halign(Align::Start).build();
+    grid.attach(&fill_label, 0, 5, 1, 1);
+    grid.attach(&fill_switch, 1, 5, 1, 1);
+
+    // Control: Fill Strategy Dropdown (fallback where exact fill is infeasible)
+    let fill_strategy_label = Label::new(Some("Fill Strategy:"));
+    fill_strategy_label.set_halign(Align::Start);
+    let fill_strategy_dropdown = DropDown::from_strings(&["Fit", "Cover", "Clamp"]);
+    fill_strategy_dropdown.set_selected(0);
+    grid.attach(&fill_strategy_label, 0, 6, 1, 1);
+    grid.attach(&fill_strategy_dropdown, 1, 6, 1, 1);
+
     // Control: Measure Rotated Bounds Switch (viewport follows rotation)
     let measure_rotated_label = Label::new(Some("Measure Rotated Bounds:"));
     measure_rotated_label.set_halign(Align::Start);
     let measure_rotated_switch = Switch::builder().active(true).halign(Align::Start).build();
-    grid.attach(&measure_rotated_label, 0, 5, 1, 1);
-    grid.attach(&measure_rotated_switch, 1, 5, 1, 1);
+    grid.attach(&measure_rotated_label, 0, 7, 1, 1);
+    grid.attach(&measure_rotated_switch, 1, 7, 1, 1);
 
     // Control: Animation Kind Dropdown
     let animation_kind_label = Label::new(Some("Animation Type:"));
     animation_kind_label.set_halign(Align::Start);
     let animation_kind_dropdown = DropDown::from_strings(&["Rotation + Zoom", "Rotation only"]);
     animation_kind_dropdown.set_selected(0);
-    grid.attach(&animation_kind_label, 0, 6, 1, 1);
-    grid.attach(&animation_kind_dropdown, 1, 6, 1, 1);
+    grid.attach(&animation_kind_label, 0, 8, 1, 1);
+    grid.attach(&animation_kind_dropdown, 1, 8, 1, 1);
 
     // Control: Zoom Depth Slider (scale at the dip of the three-phase zoom)
     let zoom_label = Label::new(Some("Zoom Depth:"));
@@ -118,8 +135,8 @@ fn build_ui(application: &Application) {
     let zoom_scale = Scale::with_range(Orientation::Horizontal, 0.5, 1.0, 0.05);
     zoom_scale.set_value(0.8);
     zoom_scale.set_hexpand(true);
-    grid.attach(&zoom_label, 0, 7, 1, 1);
-    grid.attach(&zoom_scale, 1, 7, 1, 1);
+    grid.attach(&zoom_label, 0, 9, 1, 1);
+    grid.attach(&zoom_scale, 1, 9, 1, 1);
 
     main_box.append(&grid);
 
@@ -154,8 +171,19 @@ fn build_ui(application: &Application) {
     rotation_widget.set_halign(Align::Center);
     rotation_widget.set_valign(Align::Center);
 
+    // Tint the rotated child's allocated extent so the allocation-mode
+    // switches are visually obvious: without `fill` only the
+    // aspect-fitted area is tinted; enabled, the tint covers the whole
+    // viewport at 0° and keeps covering it while rotating.
+    let css_provider = CssProvider::new();
+    css_provider.load_from_string(".demo-child-extent { background-color: rgba(61, 174, 233, 0.3); }");
+    if let Some(display) = gtk4::gdk::Display::default() {
+        gtk4::style_context_add_provider_for_display(&display, &css_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
+    }
+
     // Child widget inside the RotationWidget (an interactive card)
     let child_frame = Frame::builder().label("Rotated Content").width_request(240).height_request(240).build();
+    child_frame.add_css_class("demo-child-extent");
 
     let child_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
@@ -277,6 +305,36 @@ fn build_ui(application: &Application) {
         rotation_widget,
         move |switch| {
             rotation_widget.set_natural_child_size_enabled(switch.is_active());
+        }
+    ));
+
+    fill_switch.connect_active_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |switch| {
+            let enabled = switch.is_active();
+            rotation_widget.set_fill_enabled(enabled);
+            // `fill` stretches the child across the widget's own
+            // allocation, but `Center` alignment keeps that allocation
+            // at the measured (natural-bounds) size inside its slot.
+            // The switch therefore also toggles the widget to fill its
+            // slot - the surface-filling scenario `fill` is meant for.
+            let align = if enabled { Align::Fill } else { Align::Center };
+            rotation_widget.set_halign(align);
+            rotation_widget.set_valign(align);
+        }
+    ));
+
+    fill_strategy_dropdown.connect_selected_notify(glib::clone!(
+        #[weak]
+        rotation_widget,
+        move |dropdown| {
+            let strategy = match dropdown.selected() {
+                1 => FillStrategy::Cover,
+                2 => FillStrategy::Clamp,
+                _ => FillStrategy::Fit,
+            };
+            rotation_widget.set_fill_strategy(strategy);
         }
     ));
 

@@ -8,5 +8,6 @@ pub mod widget;
 
 pub use animation_kind::AnimationKind;
 pub use rotation::SmearorRotation;
+pub use widget::fill_strategy::FillStrategy;
 pub use widget::rotation::RotationControlHandler;
 pub use widget::widget::RotationWidget;
