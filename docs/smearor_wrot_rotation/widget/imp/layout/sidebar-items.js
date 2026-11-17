@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["prop"],"struct":["RotatedLayoutImpl"]};
+window.SIDEBAR_ITEMS = {"fn":["fill_aspect"],"mod":["prop"],"struct":["RotatedLayoutImpl"]};

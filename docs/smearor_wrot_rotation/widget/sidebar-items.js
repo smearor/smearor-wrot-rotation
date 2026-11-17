@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["imp","layout","rotation","widget"]};
+window.SIDEBAR_ITEMS = {"mod":["fill_strategy","imp","layout","rotation","widget"]};
