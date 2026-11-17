@@ -19,6 +19,7 @@ use gtk4::subclass::prelude::WidgetClassExt;
 use gtk4::subclass::prelude::WidgetImpl;
 use gtk4::subclass::prelude::WidgetImplExt;
 use smearor_commons_animation::EasingFunction;
+use smearor_commons_animation::RotationSnap;
 use smearor_commons_animation::RotationZoomAnimation;
 use smearor_commons_animation::Span;
 use smearor_commons_animation::ThreePhaseSpan;
@@ -94,198 +95,77 @@ impl ObjectImpl for RotationWidgetImpl {
         widget.add_controller(rotate_gesture.clone().upcast::<gtk4::EventController>());
         *self.rotate_gesture.borrow_mut() = Some(rotate_gesture.clone());
 
+        // Gesture lifecycle: `connect_begin` starts a fresh snap
+        // session with the rotation at drag start, `angle_changed`
+        // feeds cumulative angle reports into it, `connect_end`
+        // restores the initial rotation when the drag never snapped.
+        let snap_session = Rc::new(RefCell::new(None::<RotationSnap>));
+
         let widget_clone = widget.clone();
-        let initial_rotation = Rc::new(RefCell::new(0.0f32));
-        let total_angle_delta = Rc::new(RefCell::new(0.0f32));
-        let last_angle = Rc::new(RefCell::new(0.0f32));
-        let min_angle_threshold = 45.0f32; // Minimum angle threshold in degrees
-        let feedback_rotation = Rc::new(RefCell::new(0.0f32));
-        let direction_determined = Rc::new(RefCell::new(false));
-        let rotation_applied = Rc::new(RefCell::new(false));
-        let initial_rotation_clone = initial_rotation.clone();
-        let total_angle_delta_clone = total_angle_delta.clone();
-        let last_angle_clone = last_angle.clone();
-        let feedback_rotation_clone = feedback_rotation.clone();
-        let direction_determined_clone = direction_determined.clone();
-        let rotation_applied_clone = rotation_applied.clone();
-
+        let snap_session_clone = snap_session.clone();
         rotate_gesture.connect_begin(move |_gesture, _sequence| {
-            let layout = match widget_clone.layout_manager() {
-                Some(lm) => lm,
-                None => {
-                    error!("Failed to get layout manager in rotate gesture begin");
-                    return;
-                }
+            let Some(layout) = widget_clone.layout_manager() else {
+                error!("Failed to get layout manager in rotate gesture begin");
+                return;
             };
 
-            let layout = match layout.downcast::<RotatedLayout>() {
-                Ok(rl) => rl,
-                Err(_) => {
-                    error!("Layout manager is not RotatedLayout in rotate gesture begin");
-                    return;
-                }
+            let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                error!("Layout manager is not RotatedLayout in rotate gesture begin");
+                return;
             };
 
-            *initial_rotation_clone.borrow_mut() = layout.imp().rotation.get().to_degrees_f32();
-            *total_angle_delta_clone.borrow_mut() = 0.0;
-            *last_angle_clone.borrow_mut() = 0.0;
-            *feedback_rotation_clone.borrow_mut() = 0.0;
-            *direction_determined_clone.borrow_mut() = false;
-            *rotation_applied_clone.borrow_mut() = false;
+            *snap_session_clone.borrow_mut() = Some(RotationSnap::new(layout.imp().rotation.get()));
         });
 
         let widget_clone = widget.clone();
-        let initial_rotation_clone = initial_rotation.clone();
-        let total_angle_delta_clone = total_angle_delta.clone();
-        let last_angle_clone = last_angle.clone();
-        let feedback_rotation_clone = feedback_rotation.clone();
-        let direction_determined_clone = direction_determined.clone();
-        let rotation_applied_clone = rotation_applied.clone();
+        let snap_session_clone = snap_session.clone();
         rotate_gesture.connect_angle_changed(move |_gesture, _angle, angle_delta| {
             debug!("angle_delta {angle_delta}");
-            // Stop processing if rotation was already applied
-            if *rotation_applied_clone.borrow() {
-                return;
-            }
+            let update = snap_session_clone
+                .borrow_mut()
+                .as_mut()
+                .map(|session| session.update(RotationRad::new(angle_delta)))
+                .unwrap_or_default();
 
-            // 1. Convert to degrees (0.0 to 360.0)
-            let current_angle = RotationRad::new(angle_delta).to_degrees_f32();
-
-            // 2. Calculate the real delta
-            // We need the difference between the current angle and the last angle
-            let mut last_angle_ref = last_angle_clone.borrow_mut();
-
-            // Smooth the jump at 0/360 degrees:
-            let mut delta = current_angle - *last_angle_ref;
-
-            // If the jump is greater than 180 degrees, we have crossed the 0-degree line
-            if delta > 180.0 {
-                delta -= 360.0; // Left rotation across the zero boundary
-            } else if delta < -180.0 {
-                delta += 360.0; // Right rotation across the zero boundary
-            }
-
-            *last_angle_ref = current_angle;
-
-            // 3. Now 'delta' is reliably positive (CW) or negative (CCW)
-            *total_angle_delta_clone.borrow_mut() += delta;
-
-            let current_total = *total_angle_delta_clone.borrow();
-
-            // let mut current_angle = angle_delta.to_degrees();
-            //
-            // let delta_degrees = angle_delta.to_degrees();
-            // *total_angle_delta_clone.borrow_mut() += delta_degrees as f32;
-            //
-            // let current_total = *total_angle_delta_clone.borrow();
-
-            debug!("current_total {} min_angle_threshold {}", current_total, min_angle_threshold);
-
-            // Determine direction and apply feedback rotation on first significant movement
-            if !*direction_determined_clone.borrow() && current_total.abs() > 10.0 {
-                *direction_determined_clone.borrow_mut() = true;
-                let feedback_amount = if current_total > 0.0 { 2.0 } else { -2.0 };
-                *feedback_rotation_clone.borrow_mut() = feedback_amount as f32;
-
-                debug!("Direction determined: {}, feedback_amount: {}", current_total, feedback_amount);
-
-                let layout = match widget_clone.layout_manager() {
-                    Some(lm) => lm,
-                    None => {
-                        error!("Failed to get layout manager in rotate gesture feedback");
-                        return;
-                    }
-                };
-
-                let layout = match layout.downcast::<RotatedLayout>() {
-                    Ok(rl) => rl,
-                    Err(_) => {
-                        error!("Layout manager is not RotatedLayout in rotate gesture feedback");
-                        return;
-                    }
-                };
-
-                let current_rotation = layout.imp().rotation.get().to_degrees_f32();
-                let new_rotation = current_rotation + feedback_amount as f32;
-                debug!("Applying feedback: current_rotation {} -> new_rotation {}", current_rotation, new_rotation);
-                widget_clone.set_layout_rotation(&layout, RotationRad::from_degrees(new_rotation));
-                debug!("Applied feedback rotation: {} degrees", feedback_amount);
-            }
-
-            if current_total.abs() < min_angle_threshold {
-                // Don't apply rotation until minimum threshold is reached
-                return;
-            }
-
-            let layout = match widget_clone.layout_manager() {
-                Some(lm) => lm,
-                None => {
-                    error!("Failed to get layout manager in rotate gesture");
+            // Engagement feedback: nudge a few degrees once the drag
+            // direction locks in.
+            if let Some(feedback) = update.feedback {
+                let Some(layout) = widget_clone.layout_manager() else {
+                    error!("Failed to get layout manager in rotate gesture feedback");
                     return;
-                }
-            };
+                };
 
-            let layout = match layout.downcast::<RotatedLayout>() {
-                Ok(rl) => rl,
-                Err(_) => {
-                    error!("Layout manager is not RotatedLayout in rotate gesture");
+                let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                    error!("Layout manager is not RotatedLayout in rotate gesture feedback");
                     return;
-                }
-            };
-
-            let current_rotation = layout.imp().rotation.get().to_degrees_f32();
-            let initial_rot = *initial_rotation_clone.borrow();
-
-            // Find next standard rotation based on direction
-            let normalized_rot = initial_rot.rem_euclid(360.0);
-            debug!("current_rotation: {current_rotation} initial_rot: {initial_rot} normalized_rot: {normalized_rot} current_total: {current_total}");
-            let new_rotation = if current_total > 0.0 {
-                // Clockwise direction
-                if normalized_rot < 45.0 {
-                    90.0f32
-                } else if normalized_rot < 135.0 {
-                    180.0
-                } else if normalized_rot < 225.0 {
-                    270.0
-                } else {
-                    0.0
-                }
-            } else {
-                // Counter-clockwise direction
-                if normalized_rot < 45.0 {
-                    270.0
-                } else if normalized_rot < 135.0 {
-                    0.0
-                } else if normalized_rot < 225.0 {
-                    90.0
-                } else {
-                    180.0
-                }
-            };
-            let final_rotation = new_rotation.rem_euclid(360.0);
-
-            debug!(
-                "Animation: initial_rot={} final_rotation={} current_rotation={} normalized_rot={}",
-                initial_rot, final_rotation, current_rotation, normalized_rot
-            );
-
-            // Check if animations are enabled
-            let animations_enabled = widget_clone.imp().animations_enabled.get();
-
-            if !animations_enabled {
-                // If animations are disabled, set rotation immediately
-                let layout = match widget_clone.layout_manager() {
-                    Some(lm) => lm,
-                    None => return,
                 };
 
-                let layout = match layout.downcast::<RotatedLayout>() {
-                    Ok(rl) => rl,
-                    Err(_) => return,
-                };
+                let new_rotation = layout.imp().rotation.get() + feedback;
+                debug!("Applying feedback rotation: {new_rotation:?}");
+                widget_clone.set_layout_rotation(&layout, new_rotation);
+            }
 
-                widget_clone.set_layout_rotation(&layout, RotationRad::from_degrees(final_rotation));
-                *rotation_applied_clone.borrow_mut() = true;
+            let Some(target) = update.target else {
+                return;
+            };
+
+            let Some(layout) = widget_clone.layout_manager() else {
+                error!("Failed to get layout manager in rotate gesture");
+                return;
+            };
+
+            let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                error!("Layout manager is not RotatedLayout in rotate gesture");
+                return;
+            };
+
+            let current_rotation = layout.imp().rotation.get();
+            let final_rotation = target.to_rotation_rad();
+            debug!("Snap: current_rotation={current_rotation:?} target={target:?}");
+
+            if !widget_clone.imp().animations_enabled.get() {
+                // If animations are disabled, set rotation immediately.
+                widget_clone.set_layout_rotation(&layout, final_rotation);
                 return;
             }
 
@@ -295,7 +175,7 @@ impl ObjectImpl for RotationWidgetImpl {
             let overshoot_amount = widget_clone.imp().animation_overshoot.get();
             let mut animation = RotationZoomAnimation::new(
                 (
-                    Span::new(RotationRad::from_degrees(current_rotation), RotationRad::from_degrees(final_rotation)),
+                    Span::new(current_rotation, final_rotation),
                     ThreePhaseSpan::new(
                         ScaleFactor::ONE,
                         widget_clone.imp().animation_zoom.get(),
@@ -320,33 +200,30 @@ impl ObjectImpl for RotationWidgetImpl {
                 widget.set_layout_scale(&layout, scale);
                 ControlFlow::Continue
             });
-
-            // Mark rotation as applied to prevent further rotations
-            *rotation_applied_clone.borrow_mut() = true;
         });
 
         let widget_clone = widget.clone();
-        let initial_rotation_clone = initial_rotation.clone();
-        let total_angle_delta_clone = total_angle_delta.clone();
         rotate_gesture.connect_end(move |_gesture, _sequence| {
-            let current_total = *total_angle_delta_clone.borrow();
+            let Some(session) = snap_session.borrow_mut().take() else {
+                return;
+            };
 
-            if current_total.abs() < min_angle_threshold {
-                // Reset to initial rotation if minimum threshold was not reached
-                let Some(layout) = widget_clone.layout_manager() else {
-                    error!("Failed to get layout manager in rotate gesture end");
-                    return;
-                };
+            let Some(restore) = session.end() else {
+                return;
+            };
 
-                let Ok(layout) = layout.downcast::<RotatedLayout>() else {
-                    error!("Layout manager is not RotatedLayout in rotate gesture end");
-                    return;
-                };
+            let Some(layout) = widget_clone.layout_manager() else {
+                error!("Failed to get layout manager in rotate gesture end");
+                return;
+            };
 
-                let initial_rot = *initial_rotation_clone.borrow();
-                widget_clone.set_layout_rotation(&layout, RotationRad::from_degrees(initial_rot));
-                debug!("Reset to initial rotation {initial_rot} because threshold was not reached");
-            }
+            let Ok(layout) = layout.downcast::<RotatedLayout>() else {
+                error!("Layout manager is not RotatedLayout in rotate gesture end");
+                return;
+            };
+
+            widget_clone.set_layout_rotation(&layout, restore);
+            debug!("Reset to initial rotation {restore:?} because threshold was not reached");
         });
     }
 
