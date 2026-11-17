@@ -61,13 +61,7 @@ impl SmearorRotation {
     /// for snapped rotations; `None` for free rotations.
     #[cfg(feature = "layer-shell")]
     pub fn anchor(&self) -> Option<gtk4_layer_shell::Edge> {
-        use gtk4_layer_shell::Edge;
-        Some(match self.0.quarter_turn()? {
-            QuarterTurn::Deg0 => Edge::Bottom,
-            QuarterTurn::Deg90 => Edge::Left,
-            QuarterTurn::Deg180 => Edge::Top,
-            QuarterTurn::Deg270 => Edge::Right,
-        })
+        smearor_commons_layer::EdgeOf::edge(self.0)
     }
 }
 
