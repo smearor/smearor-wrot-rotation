@@ -14,15 +14,15 @@ rust-version = "1.98.0"
 glib = "0.22"
 gtk4 = { version = "0.11", features = ["v4_20"] }
 gtk4-layer-shell = { version = "0.8.1", optional = true }
-miette = "7.6"
 serde = { version = "1.0", features = ["derive"] }
 smearor-commons-animation = { git = "https://github.com/smearor/smearor-commons.git", features = ["gtk4"] }
 smearor-commons-geometry = { git = "https://github.com/smearor/smearor-commons.git", features = ["cairo", "gtk4"] }
+smearor-commons-layer = { git = "https://github.com/smearor/smearor-commons.git" }
 tracing = "0.1"
 
 [features]
 default = ["layer-shell"]
-layer-shell = ["dep:gtk4-layer-shell"]
+layer-shell = ["dep:gtk4-layer-shell", "smearor-commons-layer/gtk4-layer-shell"]
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)', 'cfg(fn_traits)', 'cfg(unboxed_closures)', 'cfg(feature, values("layer-shell"))'] }
@@ -41,3 +41,10 @@ strip = "symbols"
 [dev-dependencies]
 serde_json = "1.0"
 
+
+# Local override until `smearor-commons-layer` lands in the
+# published smearor-commons revision - remove this section then.
+[patch."https://github.com/smearor/smearor-commons.git"]
+smearor-commons-animation = { path = "/home/aschaeffer/git/smearor-commons/crates/animation" }
+smearor-commons-geometry = { path = "/home/aschaeffer/git/smearor-commons/crates/geometry" }
+smearor-commons-layer = { path = "/home/aschaeffer/git/smearor-commons/crates/layer" }
