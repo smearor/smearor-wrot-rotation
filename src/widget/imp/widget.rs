@@ -235,6 +235,24 @@ impl ObjectImpl for RotationWidgetImpl {
 }
 
 impl WidgetImpl for RotationWidgetImpl {
+    /// `gtk_widget_do_pick` consults `contains` only as a leaf check: a
+    /// container without an override claims picks in every area its
+    /// children reject - the invisible corners of a rotated child or a
+    /// non-rectangular child's unused allocation - and swallows them
+    /// instead of letting them fall through to the widgets below.
+    /// Delegating to the child keeps the transform stack's hit shape
+    /// identical to the child's own.
+    fn contains(&self, x: f64, y: f64) -> bool {
+        let widget = self.obj();
+        let Some(child) = widget.first_child() else {
+            return false;
+        };
+        widget
+            .compute_point(&child, &gtk4::graphene::Point::new(x as f32, y as f32))
+            .map(|point| child.contains(f64::from(point.x()), f64::from(point.y())))
+            .unwrap_or_default()
+    }
+
     fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
         self.parent_size_allocate(width, height, baseline);
         if !self.input_region_enabled.get() {
