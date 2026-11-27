@@ -7,13 +7,15 @@ use serde::de::Visitor;
 use smearor_commons_geometry::QuarterTurn;
 use smearor_commons_geometry::Rotation;
 use smearor_commons_geometry::RotationRad;
+use smearor_commons_geometry::SixthTurn;
 use std::fmt;
+use std::str::FromStr;
 
 /// Domain rotation for the rotation widget and its consumers - a
-/// [`Rotation`] (snapped quarter turn or free angle) carrying the
-/// widget's configuration semantics: f32 degree accessors for the
-/// GTK boundary, the `"0"`/`"90"`/bare-float wire format and
-/// snappedness-aware helpers like [`Self::anchor`].
+/// [`Rotation`] (snapped quarter or sixth turn or free angle)
+/// carrying the widget's configuration semantics: f32 degree
+/// accessors for the GTK boundary, the `"0"`/`"90"`/bare-float wire
+/// format and snappedness-aware helpers like [`Self::anchor`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(transparent)]
 pub struct SmearorRotation(pub Rotation);
@@ -94,6 +96,13 @@ impl From<QuarterTurn> for SmearorRotation {
     }
 }
 
+/// A snapped sixth turn as the domain rotation.
+impl From<SixthTurn> for SmearorRotation {
+    fn from(turn: SixthTurn) -> Self {
+        Self(Rotation::SixthTurn(turn))
+    }
+}
+
 impl From<&str> for SmearorRotation {
     /// Parses `"0"`/`"90"`/`"180"`/`"270"` (optionally `deg`-prefixed)
     /// into the snapped variants and any other number into a free
@@ -114,10 +123,12 @@ impl From<&str> for SmearorRotation {
 
 impl Serialize for SmearorRotation {
     /// Snapped rotations serialize as the degree strings
-    /// `"0"`/`"90"`/`"180"`/`"270"`, free rotations as bare numbers.
+    /// `"0"`/`"90"`/`"180"`/`"270"` (quarter turns) or the
+    /// [`SixthTurn`] degrees, free rotations as bare numbers.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self.0 {
             Rotation::QuarterTurn(turn) => serializer.serialize_str(&turn.to_string()),
+            Rotation::SixthTurn(turn) => serializer.serialize_str(&turn.to_string()),
             Rotation::Free(_) => serializer.serialize_f64(self.0.degrees()),
         }
     }
@@ -143,7 +154,9 @@ impl<'de> Deserialize<'de> for SmearorRotation {
                     "90" | "deg90" | "Deg90" => Ok(SmearorRotation::DEG_90),
                     "180" | "deg180" | "Deg180" => Ok(SmearorRotation::DEG_180),
                     "270" | "deg270" | "Deg270" => Ok(SmearorRotation::DEG_270),
-                    _ => Err(E::custom(format!("invalid rotation '{value}'"))),
+                    _ => SixthTurn::from_str(value)
+                        .map(|turn| SmearorRotation(Rotation::SixthTurn(turn)))
+                        .map_err(|_| E::custom(format!("invalid rotation '{value}'"))),
                 }
             }
 
