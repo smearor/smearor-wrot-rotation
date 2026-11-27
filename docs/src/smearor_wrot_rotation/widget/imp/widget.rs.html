@@ -235,54 +235,72 @@
 <a href=#235 id=235 data-nosnippet>235</a>}
 <a href=#236 id=236 data-nosnippet>236</a>
 <a href=#237 id=237 data-nosnippet>237</a><span class="kw">impl </span>WidgetImpl <span class="kw">for </span>RotationWidgetImpl {
-<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">fn </span>size_allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, width: i32, height: i32, baseline: i32) {
-<a href=#239 id=239 data-nosnippet>239</a>        <span class="self">self</span>.parent_size_allocate(width, height, baseline);
-<a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">if </span>!<span class="self">self</span>.input_region_enabled.get() {
-<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">return</span>;
-<a href=#242 id=242 data-nosnippet>242</a>        }
-<a href=#243 id=243 data-nosnippet>243</a>        <span class="kw">let </span>widget = <span class="self">self</span>.obj();
-<a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(native) = widget.native()
-<a href=#245 id=245 data-nosnippet>245</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(surface) = native.surface()
-<a href=#246 id=246 data-nosnippet>246</a>        {
-<a href=#247 id=247 data-nosnippet>247</a>            <span class="kw">let </span>angle = widget
-<a href=#248 id=248 data-nosnippet>248</a>                .layout_manager()
-<a href=#249 id=249 data-nosnippet>249</a>                .and_then(|lm| lm.downcast::&lt;RotatedLayout&gt;().ok())
-<a href=#250 id=250 data-nosnippet>250</a>                .map(|rl| rl.imp().rotation.get())
-<a href=#251 id=251 data-nosnippet>251</a>                .unwrap_or(RotationRad::ZERO);
-<a href=#252 id=252 data-nosnippet>252</a>            <span class="kw">let </span>region = Rect::&lt;Pixels&gt;::new(Vec2::ZERO, Vec2::new(width, height).to_f64())
-<a href=#253 id=253 data-nosnippet>253</a>                .rotated_region(angle)
-<a href=#254 id=254 data-nosnippet>254</a>                .unwrap_or_else(|e| {
-<a href=#255 id=255 data-nosnippet>255</a>                    <span class="macro">error!</span>(<span class="string">"Failed to build rotated input region: {}"</span>, e);
-<a href=#256 id=256 data-nosnippet>256</a>                    Region::create()
-<a href=#257 id=257 data-nosnippet>257</a>                });
-<a href=#258 id=258 data-nosnippet>258</a>            <span class="comment">// `set_input_region` expects surface coordinates; the computed
-<a href=#259 id=259 data-nosnippet>259</a>            // region is widget-space (0..w x 0..h) - translate by the
-<a href=#260 id=260 data-nosnippet>260</a>            // widget's origin inside the native. Only exact when ancestor
-<a href=#261 id=261 data-nosnippet>261</a>            // transforms are pure translations.
-<a href=#262 id=262 data-nosnippet>262</a>            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(origin) = widget.compute_point(<span class="kw-2">&amp;</span>native, <span class="kw-2">&amp;</span>gtk4::graphene::Point::new(<span class="number">0.0</span>, <span class="number">0.0</span>)) {
-<a href=#263 id=263 data-nosnippet>263</a>                <span class="kw">let </span>offset = Position::&lt;f32&gt;::from(origin).to_i32_round();
-<a href=#264 id=264 data-nosnippet>264</a>                region.translate(offset.x, offset.y);
-<a href=#265 id=265 data-nosnippet>265</a>            }
-<a href=#266 id=266 data-nosnippet>266</a>            surface.set_input_region(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>region));
-<a href=#267 id=267 data-nosnippet>267</a>        }
-<a href=#268 id=268 data-nosnippet>268</a>    }
-<a href=#269 id=269 data-nosnippet>269</a>
-<a href=#270 id=270 data-nosnippet>270</a>    <span class="kw">fn </span>unmap(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-<a href=#271 id=271 data-nosnippet>271</a>        <span class="self">self</span>.parent_unmap();
-<a href=#272 id=272 data-nosnippet>272</a>        <span class="comment">// The surface's input region outlives this widget - reset it so a
-<a href=#273 id=273 data-nosnippet>273</a>        // removed/hidden widget never leaves the surface clamped.
-<a href=#274 id=274 data-nosnippet>274</a>        </span><span class="kw">if </span><span class="self">self</span>.input_region_enabled.get()
-<a href=#275 id=275 data-nosnippet>275</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(surface) = <span class="self">self</span>.obj().native().and_then(|n| n.surface())
-<a href=#276 id=276 data-nosnippet>276</a>        {
-<a href=#277 id=277 data-nosnippet>277</a>            surface.set_input_region(<span class="prelude-val">None</span>);
-<a href=#278 id=278 data-nosnippet>278</a>        }
-<a href=#279 id=279 data-nosnippet>279</a>    }
-<a href=#280 id=280 data-nosnippet>280</a>
-<a href=#281 id=281 data-nosnippet>281</a>    <span class="kw">fn </span>snapshot(<span class="kw-2">&amp;</span><span class="self">self</span>, snapshot: <span class="kw-2">&amp;</span>gtk4::Snapshot) {
-<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>widget = <span class="self">self</span>.obj();
-<a href=#283 id=283 data-nosnippet>283</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(child) = widget.first_child() {
-<a href=#284 id=284 data-nosnippet>284</a>            widget.snapshot_child(<span class="kw-2">&amp;</span>child, snapshot);
+<a href=#238 id=238 data-nosnippet>238</a>    <span class="doccomment">/// `gtk_widget_do_pick` consults `contains` only as a leaf check: a
+<a href=#239 id=239 data-nosnippet>239</a>    /// container without an override claims picks in every area its
+<a href=#240 id=240 data-nosnippet>240</a>    /// children reject - the invisible corners of a rotated child or a
+<a href=#241 id=241 data-nosnippet>241</a>    /// non-rectangular child's unused allocation - and swallows them
+<a href=#242 id=242 data-nosnippet>242</a>    /// instead of letting them fall through to the widgets below.
+<a href=#243 id=243 data-nosnippet>243</a>    /// Delegating to the child keeps the transform stack's hit shape
+<a href=#244 id=244 data-nosnippet>244</a>    /// identical to the child's own.
+<a href=#245 id=245 data-nosnippet>245</a>    </span><span class="kw">fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, x: f64, y: f64) -&gt; bool {
+<a href=#246 id=246 data-nosnippet>246</a>        <span class="kw">let </span>widget = <span class="self">self</span>.obj();
+<a href=#247 id=247 data-nosnippet>247</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(child) = widget.first_child() <span class="kw">else </span>{
+<a href=#248 id=248 data-nosnippet>248</a>            <span class="kw">return </span><span class="bool-val">false</span>;
+<a href=#249 id=249 data-nosnippet>249</a>        };
+<a href=#250 id=250 data-nosnippet>250</a>        widget
+<a href=#251 id=251 data-nosnippet>251</a>            .compute_point(<span class="kw-2">&amp;</span>child, <span class="kw-2">&amp;</span>gtk4::graphene::Point::new(x <span class="kw">as </span>f32, y <span class="kw">as </span>f32))
+<a href=#252 id=252 data-nosnippet>252</a>            .map(|point| child.contains(f64::from(point.x()), f64::from(point.y())))
+<a href=#253 id=253 data-nosnippet>253</a>            .unwrap_or_default()
+<a href=#254 id=254 data-nosnippet>254</a>    }
+<a href=#255 id=255 data-nosnippet>255</a>
+<a href=#256 id=256 data-nosnippet>256</a>    <span class="kw">fn </span>size_allocate(<span class="kw-2">&amp;</span><span class="self">self</span>, width: i32, height: i32, baseline: i32) {
+<a href=#257 id=257 data-nosnippet>257</a>        <span class="self">self</span>.parent_size_allocate(width, height, baseline);
+<a href=#258 id=258 data-nosnippet>258</a>        <span class="kw">if </span>!<span class="self">self</span>.input_region_enabled.get() {
+<a href=#259 id=259 data-nosnippet>259</a>            <span class="kw">return</span>;
+<a href=#260 id=260 data-nosnippet>260</a>        }
+<a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>widget = <span class="self">self</span>.obj();
+<a href=#262 id=262 data-nosnippet>262</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(native) = widget.native()
+<a href=#263 id=263 data-nosnippet>263</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(surface) = native.surface()
+<a href=#264 id=264 data-nosnippet>264</a>        {
+<a href=#265 id=265 data-nosnippet>265</a>            <span class="kw">let </span>angle = widget
+<a href=#266 id=266 data-nosnippet>266</a>                .layout_manager()
+<a href=#267 id=267 data-nosnippet>267</a>                .and_then(|lm| lm.downcast::&lt;RotatedLayout&gt;().ok())
+<a href=#268 id=268 data-nosnippet>268</a>                .map(|rl| rl.imp().rotation.get())
+<a href=#269 id=269 data-nosnippet>269</a>                .unwrap_or(RotationRad::ZERO);
+<a href=#270 id=270 data-nosnippet>270</a>            <span class="kw">let </span>region = Rect::&lt;Pixels&gt;::new(Vec2::ZERO, Vec2::new(width, height).to_f64())
+<a href=#271 id=271 data-nosnippet>271</a>                .rotated_region(angle)
+<a href=#272 id=272 data-nosnippet>272</a>                .unwrap_or_else(|e| {
+<a href=#273 id=273 data-nosnippet>273</a>                    <span class="macro">error!</span>(<span class="string">"Failed to build rotated input region: {}"</span>, e);
+<a href=#274 id=274 data-nosnippet>274</a>                    Region::create()
+<a href=#275 id=275 data-nosnippet>275</a>                });
+<a href=#276 id=276 data-nosnippet>276</a>            <span class="comment">// `set_input_region` expects surface coordinates; the computed
+<a href=#277 id=277 data-nosnippet>277</a>            // region is widget-space (0..w x 0..h) - translate by the
+<a href=#278 id=278 data-nosnippet>278</a>            // widget's origin inside the native. Only exact when ancestor
+<a href=#279 id=279 data-nosnippet>279</a>            // transforms are pure translations.
+<a href=#280 id=280 data-nosnippet>280</a>            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(origin) = widget.compute_point(<span class="kw-2">&amp;</span>native, <span class="kw-2">&amp;</span>gtk4::graphene::Point::new(<span class="number">0.0</span>, <span class="number">0.0</span>)) {
+<a href=#281 id=281 data-nosnippet>281</a>                <span class="kw">let </span>offset = Position::&lt;f32&gt;::from(origin).to_i32_round();
+<a href=#282 id=282 data-nosnippet>282</a>                region.translate(offset.x, offset.y);
+<a href=#283 id=283 data-nosnippet>283</a>            }
+<a href=#284 id=284 data-nosnippet>284</a>            surface.set_input_region(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>region));
 <a href=#285 id=285 data-nosnippet>285</a>        }
 <a href=#286 id=286 data-nosnippet>286</a>    }
-<a href=#287 id=287 data-nosnippet>287</a>}
+<a href=#287 id=287 data-nosnippet>287</a>
+<a href=#288 id=288 data-nosnippet>288</a>    <span class="kw">fn </span>unmap(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+<a href=#289 id=289 data-nosnippet>289</a>        <span class="self">self</span>.parent_unmap();
+<a href=#290 id=290 data-nosnippet>290</a>        <span class="comment">// The surface's input region outlives this widget - reset it so a
+<a href=#291 id=291 data-nosnippet>291</a>        // removed/hidden widget never leaves the surface clamped.
+<a href=#292 id=292 data-nosnippet>292</a>        </span><span class="kw">if </span><span class="self">self</span>.input_region_enabled.get()
+<a href=#293 id=293 data-nosnippet>293</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Some</span>(surface) = <span class="self">self</span>.obj().native().and_then(|n| n.surface())
+<a href=#294 id=294 data-nosnippet>294</a>        {
+<a href=#295 id=295 data-nosnippet>295</a>            surface.set_input_region(<span class="prelude-val">None</span>);
+<a href=#296 id=296 data-nosnippet>296</a>        }
+<a href=#297 id=297 data-nosnippet>297</a>    }
+<a href=#298 id=298 data-nosnippet>298</a>
+<a href=#299 id=299 data-nosnippet>299</a>    <span class="kw">fn </span>snapshot(<span class="kw-2">&amp;</span><span class="self">self</span>, snapshot: <span class="kw-2">&amp;</span>gtk4::Snapshot) {
+<a href=#300 id=300 data-nosnippet>300</a>        <span class="kw">let </span>widget = <span class="self">self</span>.obj();
+<a href=#301 id=301 data-nosnippet>301</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(child) = widget.first_child() {
+<a href=#302 id=302 data-nosnippet>302</a>            widget.snapshot_child(<span class="kw-2">&amp;</span>child, snapshot);
+<a href=#303 id=303 data-nosnippet>303</a>        }
+<a href=#304 id=304 data-nosnippet>304</a>    }
+<a href=#305 id=305 data-nosnippet>305</a>}
 </code></pre></div></section></main></body></html>
