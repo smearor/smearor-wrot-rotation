@@ -4,6 +4,7 @@ use serde::Serialize;
 use serde::Serializer;
 use serde::de::Error;
 use serde::de::Visitor;
+use smearor_commons_geometry::EighthTurn;
 use smearor_commons_geometry::QuarterTurn;
 use smearor_commons_geometry::Rotation;
 use smearor_commons_geometry::RotationRad;
@@ -103,6 +104,13 @@ impl From<SixthTurn> for SmearorRotation {
     }
 }
 
+/// A snapped eighth turn as the domain rotation.
+impl From<EighthTurn> for SmearorRotation {
+    fn from(turn: EighthTurn) -> Self {
+        Self(Rotation::EighthTurn(turn))
+    }
+}
+
 impl From<&str> for SmearorRotation {
     /// Parses `"0"`/`"90"`/`"180"`/`"270"` (optionally `deg`-prefixed)
     /// into the snapped variants and any other number into a free
@@ -124,11 +132,13 @@ impl From<&str> for SmearorRotation {
 impl Serialize for SmearorRotation {
     /// Snapped rotations serialize as the degree strings
     /// `"0"`/`"90"`/`"180"`/`"270"` (quarter turns) or the
-    /// [`SixthTurn`] degrees, free rotations as bare numbers.
+    /// [`SixthTurn`]/[`EighthTurn`] degrees, free rotations as
+    /// bare numbers.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self.0 {
             Rotation::QuarterTurn(turn) => serializer.serialize_str(&turn.to_string()),
             Rotation::SixthTurn(turn) => serializer.serialize_str(&turn.to_string()),
+            Rotation::EighthTurn(turn) => serializer.serialize_str(&turn.to_string()),
             Rotation::Free(_) => serializer.serialize_f64(self.0.degrees()),
         }
     }
@@ -156,6 +166,7 @@ impl<'de> Deserialize<'de> for SmearorRotation {
                     "270" | "deg270" | "Deg270" => Ok(SmearorRotation::DEG_270),
                     _ => SixthTurn::from_str(value)
                         .map(|turn| SmearorRotation(Rotation::SixthTurn(turn)))
+                        .or_else(|_| EighthTurn::from_str(value).map(|turn| SmearorRotation(Rotation::EighthTurn(turn))))
                         .map_err(|_| E::custom(format!("invalid rotation '{value}'"))),
                 }
             }
